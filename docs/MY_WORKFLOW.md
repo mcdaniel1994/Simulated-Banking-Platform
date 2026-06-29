@@ -1403,6 +1403,109 @@ per-request update is clearer and matches this project's explicit learning plan.
 Review and commit Phase 11. Stop before Phase 12 so logout revocation, cookie clearing, and logout
 audit behavior remain one separate phase.
 
+### Entry — 2026-06-29 — Phase 12: Logout and Server-Side Revocation
+
+#### What I Worked On
+
+I added authenticated logout using the validated user/session principal from Phase 11. The service
+sets `revoked_at` and writes a logout audit atomically, while the route expires both the HttpOnly
+session cookie and readable CSRF cookie.
+
+#### What I Expected to Happen
+
+I expected logout to return 204, persist immediate revocation, clear both browser cookies, and make
+the old raw cookie unusable even if manually restored. Missing authentication should fail with the
+same 401 envelope and create no logout audit.
+
+#### What Actually Happened
+
+Targeted tests proved logout revocation, audit creation, cookie clearing, old-cookie rejection, and
+unauthenticated rejection. A real Uvicorn flow returned login 200, logout 204, and 401 when the old
+cookie was reused. PostgreSQL confirmed the revoked session and logout audit row.
+
+The full suite passed with 43 tests and only the existing FastAPI TestClient warning. Ruff passed,
+and Alembic reported no drift.
+
+#### Concepts I Learned
+
+- Browser cookie deletion is convenience; the persisted `revoked_at` value is the security control.
+- Passing the validated principal into logout avoids a second raw-cookie/session lookup.
+- Revocation and its audit should share one transaction so history cannot claim an action that did
+  not persist.
+- Reusing an old raw token is the strongest observable test that logout is truly server-side.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Invalid-cookie logout | Always return 204; require valid principal | Require valid principal | The phase plan builds logout on the current session and audits a concrete revocation. | Already-invalid logout attempts return 401 rather than being idempotent. |
+| Revocation transaction | Commit revocation then audit; commit together | One transaction | Audit and security state cannot diverge. | An audit-write failure rolls back logout. |
+| Cookie clearing | Clear auth only; clear auth and CSRF | Clear both with issuance attributes | The CSRF token belongs to the revoked authenticated browser session. | Two deletion headers are required. |
+
+#### Problems I Encountered
+
+- Ruff requested mechanical formatting after logout assertions expanded the API test module.
+
+#### How I Diagnosed Them
+
+- Targeted tests passed before formatting, isolating the issue to style rather than behavior.
+
+#### How I Solved Them
+
+- I applied Ruff's formatter and reran targeted tests, the full suite, and Alembic drift checking.
+
+#### Tests I Added
+
+- Logout marks the exact session revoked and writes a linked logout audit.
+- Auth and CSRF deletion headers match the original cookie scope and security attributes.
+- Manually restoring the old raw cookie still produces 401 from `/auth/me`.
+- Logout without a valid session returns 401, sets no cookies, and writes no logout audit.
+
+Result: `43 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run pytest tests/api/test_auth.py -q
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+#### Files I Changed
+
+- `backend/app/services/auth_service.py`
+- `backend/app/api/routes/auth.py`
+- `backend/tests/api/test_auth.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Revocation invalidates the server-side session before cookie cleanup matters.
+- No raw token, cookie value, or password is written to audit metadata.
+- Logout audits identify only the user and session IDs.
+- Reusing a revoked cookie is covered by both automated and real-server verification.
+- CSRF enforcement remains explicitly scheduled for Phase 13.
+
+#### What I Would Do Differently
+
+For a public production service, I would consider idempotent logout for already-invalid cookies,
+but this implementation follows the current plan's valid-session dependency and explicit audit.
+
+#### Questions I Still Have
+
+- Phase 13 must decide whether the CSRF dependency should be attached per route or as a reusable
+  dependency alias for every unsafe method.
+
+#### Next Step
+
+Review and commit Phase 12. Stop before Phase 13 so double-submit CSRF comparison and route
+attachment remain one separate security phase.
+
 ---
 
 ## Long-Term Logs
@@ -1428,6 +1531,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D12 | 2026-06-29 | Generate 256-bit opaque tokens and store HMAC-SHA256 lookup hashes keyed by `SESSION_SECRET` | Phase 9 token storage | Plain SHA-256; concatenated pepper; HMAC-SHA256 | HMAC is a standard deterministic keyed construction that supports indexed lookup while limiting database-only compromise. | Raw tokens stay cookie-only; hashes are 64 hex characters; rotating `SESSION_SECRET` invalidates all sessions. |
 | D13 | 2026-06-29 | Use enumeration-resistant login, host-prefixed auth cookies, and minimal cookie-only session output | Phase 10 login composition | Early unknown-user return; generic timing; normal vs host cookie; return user vs status | Dummy Argon2 work, generic envelopes, and `__Host-session` strengthen the first auth boundary without exposing raw tokens. | Domain cookies fall back to `session`; `/auth/me` supplies user state later; Phase 17 centralizes the envelope. |
 | D14 | 2026-06-29 | Return a user/session principal, expire inclusively, and slide idle activity on every valid request | Phase 11 session resolution | User only vs principal; exclusive vs inclusive boundary; thresholded vs every request | The principal supports logout reuse, inclusive deadlines fail closed, and per-request sliding matches the approved plan. | Authenticated requests commit `last_used_at`; Phase 12 can revoke the resolved session directly. |
+| D15 | 2026-06-29 | Require a valid principal for logout and atomically pair revocation with its audit | Phase 12 logout | Idempotent invalid logout; valid-only logout; separate vs shared commit | A concrete resolved session supports durable revocation proof and consistent audit history. | Invalid cookies return 401; both cookies are cleared only after revocation commits; Phase 13 adds CSRF. |
 
 ### Debugging Log
 

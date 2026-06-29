@@ -114,3 +114,28 @@ def login(
         raise
 
     return LoginResult(raw_session_token=raw_token, expires_at=expires_at)
+
+
+def logout(db: DatabaseSession, *, user: User, session: Session) -> None:
+    """Revoke one validated session and audit the logout atomically."""
+
+    now = datetime.now(UTC)
+    try:
+        # Revocation is the durable security action; deleting browser cookies is only client cleanup.
+        session.revoked_at = now
+        db.add(
+            AuditEvent(
+                actor=user,
+                event_type="logout",
+                entity_type="session",
+                entity_id=str(session.id),
+                event_metadata={"outcome": "revoked"},
+                created_at=now,
+            )
+        )
+
+        # Audit history and the revocation timestamp must succeed or roll back together.
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session as DatabaseSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentPrincipal, CurrentUser
 from app.core.config import get_settings
 from app.core.security import generate_csrf_token, get_session_cookie_name
 from app.db.session import get_db
 from app.schemas.auth import CurrentUserResponse, LoginRequest, LoginResponse
-from app.services.auth_service import LoginFailedError, login
+from app.services.auth_service import LoginFailedError, login, logout
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -92,3 +92,38 @@ def current_user_route(user: CurrentUser) -> CurrentUserResponse:
 
     # Response validation selects only explicitly safe fields from the ORM model.
     return CurrentUserResponse.model_validate(user)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout_route(
+    response: Response,
+    principal: CurrentPrincipal,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> None:
+    """Revoke the current server-side session and clear both browser cookies."""
+
+    # The validated principal supplies the exact session row; no raw-cookie lookup is repeated.
+    logout(db, user=principal.user, session=principal.session)
+
+    settings = get_settings()
+    cookie_domain = settings.cookie_domain
+
+    # Match issuance attributes so browsers remove the correct HttpOnly authentication cookie.
+    response.delete_cookie(
+        key=get_session_cookie_name(cookie_domain),
+        path="/",
+        domain=cookie_domain,
+        secure=True,
+        httponly=True,
+        samesite="strict",
+    )
+
+    # The readable CSRF cookie is independent but must end with the revoked authenticated session.
+    response.delete_cookie(
+        key=settings.csrf_cookie_name,
+        path="/",
+        domain=cookie_domain,
+        secure=True,
+        httponly=False,
+        samesite="strict",
+    )

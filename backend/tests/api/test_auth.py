@@ -345,3 +345,71 @@ def test_auth_me_rejects_session_for_inactive_user(
 
     assert response.status_code == 401
     assert response.json() == UNAUTHENTICATED_ERROR
+
+
+def test_logout_revokes_server_side_clears_cookies_and_audits(
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert login_response.status_code == 200
+    old_raw_token = login_response.cookies.get(HOST_SESSION_COOKIE_NAME)
+    assert old_raw_token is not None
+
+    response = client.post("/api/auth/logout")
+
+    assert response.status_code == 204
+    cookie_headers = response.headers.get_list("set-cookie")
+    session_clear = next(
+        header for header in cookie_headers if header.startswith(f"{HOST_SESSION_COOKIE_NAME}=")
+    )
+    csrf_clear = next(header for header in cookie_headers if header.startswith("csrf_token="))
+
+    # Both browser cookies are expired, but the database assertion below proves real revocation.
+    for header in (session_clear, csrf_clear):
+        assert "max-age=0" in header.lower()
+        assert "expires=" in header.lower()
+        assert "path=/" in header.lower()
+        assert "secure" in header.lower()
+        assert "samesite=strict" in header.lower()
+    assert "httponly" in session_clear.lower()
+    assert "httponly" not in csrf_clear.lower()
+
+    with session_factory() as db:
+        revoked_session = db.scalar(select(Session))
+        assert revoked_session is not None
+        assert revoked_session.revoked_at is not None
+        logout_audit = db.scalar(select(AuditEvent).where(AuditEvent.event_type == "logout"))
+        assert logout_audit is not None
+        assert logout_audit.actor_user_id == revoked_session.user_id
+        assert logout_audit.entity_id == str(revoked_session.id)
+
+    # Reintroducing the old raw cookie cannot bypass the durable revoked_at check.
+    client.cookies.set(HOST_SESSION_COOKIE_NAME, old_raw_token)
+    reused_response = client.get("/api/auth/me")
+    assert reused_response.status_code == 401
+    assert reused_response.json() == UNAUTHENTICATED_ERROR
+
+
+def test_logout_requires_a_valid_current_session(
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+
+    response = client.post("/api/auth/logout")
+
+    assert response.status_code == 401
+    assert response.json() == UNAUTHENTICATED_ERROR
+    assert not response.headers.get_list("set-cookie")
+    with session_factory() as db:
+        assert (
+            db.scalar(
+                select(func.count())
+                .select_from(AuditEvent)
+                .where(AuditEvent.event_type == "logout")
+            )
+            == 0
+        )
