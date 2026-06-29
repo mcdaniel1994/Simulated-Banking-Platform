@@ -843,6 +843,110 @@ first run so the generated workflow begins warning-free.
 Review and commit Phase 6. Stop before Phase 7 so the seed/hashing dependency is resolved explicitly
 before demo data is created.
 
+### Entry — 2026-06-29 — Phase 8: Password Hashing with Argon2id
+
+#### What I Worked On
+
+I implemented the password-hashing primitive before Phase 7 because deterministic seed users need
+real password hashes. The module hashes passwords, verifies credentials, and identifies hashes that
+need upgraded parameters.
+
+#### What I Expected to Happen
+
+I expected equal passwords to receive different salts, correct passwords to verify, wrong or
+malformed values to fail safely, and weaker historical hashes to be identified for rehashing.
+
+#### What Actually Happened
+
+Argon2id produced distinct salted hashes with the explicit specification floor: 19,456 KiB memory,
+2 iterations, and parallelism 1. Correct verification succeeded, wrong and malformed inputs
+returned false, and rehash detection distinguished weak parameters from current ones.
+
+The complete suite passed with 22 tests and only the existing FastAPI TestClient warning. Ruff
+formatting and linting passed.
+
+#### Concepts I Learned
+
+- Password hashing is deliberately expensive and one-way; it is not encryption.
+- A random salt prevents identical passwords from creating identical stored hashes.
+- Argon2id parameters must be explicit so a dependency default change does not silently change the
+  application's security contract.
+- Rehash-on-login lets stored credentials improve over time without knowing plaintext passwords.
+- Malformed stored hashes should become generic authentication failures rather than leak parser
+  details.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Phase order | Hash inline during seeding; implement Phase 8 first | Phase 8 first, then return to Phase 7 | The plan explicitly allows this sequence and it avoids duplicate temporary security code. | M3 starts before M2 is fully closed. |
+| Argon2 parameters | Library defaults; explicit specification floor | 19 MiB, 2 iterations, parallelism 1 | Explicit values meet SPEC §9.1 and remain stable across dependency upgrades. | Future parameter increases require intentional rehashing. |
+| Invalid stored hash | Raise parser error; return authentication failure | Return `False` | Login should not expose internal hash-format details. | Operational diagnosis must happen through safe server-side handling later. |
+
+#### Problems I Encountered
+
+- Phase 7 precedes Phase 8 in numbering even though seeded credentials require password hashing.
+- Ruff requested its configured import grouping in the new test module.
+
+#### How I Diagnosed Them
+
+- The Phase 7 plan explicitly says to sequence Phase 8 first if needed or duplicate hashing inline.
+- Ruff identified the exact import block and supplied a safe mechanical fix.
+
+#### How I Solved Them
+
+- I chose the plan-approved Phase 8-first path and recorded the intentional ordering.
+- I applied Ruff's import correction without changing behavior.
+
+#### Tests I Added
+
+- Argon2id type and minimum memory/time/parallelism parameters.
+- Distinct salted hashes for the same password.
+- Correct-password success and wrong-password failure.
+- Malformed-hash failure without an exception escaping.
+- Rehash detection for weak versus current parameters.
+
+Result: `22 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest tests/unit/test_security.py -q
+uv run pytest -q
+```
+
+#### Files I Changed
+
+- `backend/app/core/security.py`
+- `backend/tests/unit/test_security.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Plaintext passwords and password hashes are never logged.
+- The implementation delegates comparison and hash parsing to `argon2-cffi`.
+- Each hash receives a fresh random salt.
+- Invalid stored hashes fail closed.
+- Rehash detection supports future parameter upgrades after successful authentication.
+
+#### What I Would Do Differently
+
+I would place the hashing primitive immediately before seeding in the original phase numbering so
+the dependency direction is visible without a documented reorder.
+
+#### Questions I Still Have
+
+- Demo credential values still need to be selected and documented during Phase 7.
+
+#### Next Step
+
+Review and commit Phase 8, then return to Phase 7 and use this shared hashing primitive for every
+seeded demo credential. Do not begin Phase 9.
+
 ---
 
 ## Long-Term Logs
@@ -863,6 +967,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D7 | 2026-06-29 | Run PostgreSQL 16 in Docker Compose with separate dev/test databases and a non-superuser app role | Phase 4 local database isolation | Homebrew PostgreSQL; Docker Compose | Compose gives the banking project a dedicated volume/network while explicit test URL checks protect development data. | FastAPI stays local; host 5433 maps to container 5432; the bootstrap admin is separate from `banking_user`; initialization runs only on an empty volume. |
 | D8 | 2026-06-29 | Use integer primary keys, named domain enums, and no implicit ORM delete cascades | Phase 5 model design | Integer vs UUID; strings vs enums; cascades vs explicit retention | These choices keep the schema teachable while preserving domain validity and append-only history. | IDs remain enumerable and require strict authorization; enum changes need migrations; future deletions must be explicit. |
 | D9 | 2026-06-29 | Resolve Alembic runtime URLs from settings and inject test URLs explicitly | Phase 6 migration safety | URL in config; process env override; Alembic config attribute | Credentials remain outside source control and migration tests cannot silently target development. | CLI commands require application settings; tests construct a dedicated Alembic config for the isolated database. |
+| D10 | 2026-06-29 | Complete Phase 8 password hashing before Phase 7 seed data | Phase 7 requires Argon2id-hashed demo credentials | Hash inline and refactor; sequence Phase 8 first | Reusing one tested security primitive avoids temporary duplicate credential code. | M3 begins before M2 closes; after the Phase 8 commit, work returns to Phase 7 before Phase 9. |
 
 ### Debugging Log
 

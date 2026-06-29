@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M2 — Database (in progress)
-- Current phase: Phase 6 — Alembic configuration and first migration (complete)
-- Current task: Review and commit the completed Phase 6 batch
-- Last completed: Phase 6 — Alembic configuration and first migration
-- Next action: Review and commit Phase 6, then plan Phase 7 separately
+- Current milestone: M3 dependency work; M2 Phase 7 remains pending
+- Current phase: Phase 8 — Password hashing with Argon2id (complete, sequenced early)
+- Current task: Review and commit the completed Phase 8 dependency
+- Last completed: Phase 8 — Password hashing with Argon2id
+- Next action: Review and commit Phase 8, then return to Phase 7 seed data
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | IN PROGRESS | 2026-06-29 |  | Phases 4–6 complete; Phase 7 remains |
-| M3 — Authentication & Authorization | NOT STARTED |  |  |  |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phase 8 completed early as a Phase 7 dependency |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -217,20 +217,24 @@ Completion evidence:
 ## M3 — Authentication & Authorization `[SUBMISSION]`
 
 ### Phase 8 — Password hashing (Argon2id)
-Status: NOT STARTED
-- [ ] `hash_password` (Argon2id at/above floor)
-- [ ] `verify_password` (constant-time)
-- [ ] `needs_rehash`
-- [ ] Ensure no plaintext/hash logging
-- [ ] Add unit tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] `hash_password` (Argon2id at/above floor)
+- [x] `verify_password` (constant-time)
+- [x] `needs_rehash`
+- [x] Ensure no plaintext/hash logging
+- [x] Add unit tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `22 passed, 1 existing warning`; Ruff format and lint checks passed.
+- Manual verification: A non-secret smoke check confirmed Argon2id with 19,456 KiB memory,
+  2 iterations, and parallelism 1; the correct password verified, a wrong password failed, and a
+  current hash did not require rehashing.
 - Commit:
-- Notes:
+- Notes: Phase 8 was intentionally sequenced before Phase 7 using the implementation plan's
+  explicit dependency option. The module performs no logging and treats malformed hashes as
+  authentication failures. Session-token work remains Phase 9 and was not started.
 
 ### Phase 9 — Session-token utility (hash-only storage)
 Status: NOT STARTED
