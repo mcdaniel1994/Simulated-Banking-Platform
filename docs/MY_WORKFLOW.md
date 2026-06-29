@@ -2501,6 +2501,41 @@ Result: `102 passed, 1 existing warning`.
 
 Commit Phase 23 and begin M5 with the admin dashboard.
 
+### Entry — 2026-06-29 — Phase 24: Admin Dashboard
+
+#### What I Worked On
+
+I added the first ADMIN-only endpoint with SQL aggregate queries for customer count, account count,
+total simulated balance, and transactions in the last 30 days. Money remains a JSON string.
+
+#### What Actually Happened
+
+Three focused tests and all 105 backend tests passed. Real Uvicorn returned the dashboard to ADMIN
+and 403 to CUSTOMER. The development total reflected prior smoke-test activity while the isolated
+seed test remained deterministic.
+
+#### Decisions I Made
+
+| Decision | Choice | Reason |
+|---|---|---|
+| Customer count | Exclude ADMIN users | The metric represents managed customers |
+| Recent window | 30 days | Explicit and conventional rather than an ambiguous "recent" |
+| Admin boundary | `AdminUser`, no ownership dependency | Admin reads are not customer ownership |
+
+#### Files I Changed
+
+- `backend/app/schemas/admin.py`
+- `backend/app/services/admin_service.py`
+- `backend/app/api/routes/admin.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_admin_dashboard.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 24 and add administrator customer list/detail reads in Phase 25.
+
 ---
 
 ## Long-Term Logs
@@ -2538,6 +2573,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D24 | 2026-06-29 | Check withdrawal funds while holding the account row lock | Phase 21 withdrawal | Pre-lock validation; locked validation; database constraint only | Locked validation prevents concurrent requests from approving against one stale balance while returning a useful domain error. | Overdraw returns `INSUFFICIENT_FUNDS`; the database check remains a final backstop. |
 | D25 | 2026-06-29 | Lock transfer accounts in ascending ID order and test rollback after flush | Phase 22 transfer | Request order; sorted order; shallow pre-flush failure; post-flush failure | Sorted locks avoid deadlocks; post-flush failure proves database atomicity after statements execute. | Transfer parent, balances, two legs, and audit share one commit and fully roll back together. |
 | D26 | 2026-06-29 | Keep reconciliation test-only for the MVP and verify concurrency with independent PostgreSQL sessions | Phase 23 integrity verification | Admin endpoint; helper plus DB tests; sequential simulation | The MVP requires proof, not an admin feature; independent sessions exercise real row locks. | M4 closes with reconciliation and no-overdraft evidence without extension scope. |
+| D27 | 2026-06-29 | Define recent dashboard activity as a 30-day transaction count and exclude ADMIN from customer totals | Phase 24 admin dashboard | All-time vs windowed activity; all users vs customers | Explicit semantics make aggregates testable and match the management domain. | Static seed may show zero recent rows; real activity updates the metric naturally. |
 
 ### Debugging Log
 

@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M4 — Banking Domain (complete)
-- Current phase: Phase 23 — Reconciliation and concurrency (complete)
-- Current task: Commit Phase 23, then begin M5
-- Last completed: Phase 23 — Reconciliation and concurrency
-- Next action: Commit Phase 23, then implement Phase 24 admin dashboard
+- Current milestone: M5 — Admin Backend (in progress)
+- Current phase: Phase 24 — Admin dashboard (complete)
+- Current task: Commit Phase 24, then begin Phase 25
+- Last completed: Phase 24 — Admin dashboard
+- Next action: Commit Phase 24, then implement Phase 25 admin reads
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -24,7 +24,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
-| M5 — Admin Backend | NOT STARTED |  |  |  |
+| M5 — Admin Backend | IN PROGRESS | 2026-06-29 |  | Phase 24 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
 | M8 — Customer Frontend | NOT STARTED |  |  |  |
@@ -553,14 +553,14 @@ Status: COMPLETE
 - [x] Concurrency test (two parallel withdrawals, no overdraw)
 - [x] Assert `CHECK (balance >= 0)` under the race
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused reconciliation/concurrency tests `2 passed`; full suite `102 passed, 1 existing
   warning`; Ruff passed; `alembic check` reported no model/schema drift.
 - Manual verification: Reconciliation helper checked all four development accounts after real
   deposit and transfer smoke mutations; every stored balance matched signed history.
-- Commit:
+- Commit: `879957f test(money): verify reconciliation and concurrent-overdraw protection`
 - Notes: Reconciliation stays test-only for MVP. Two independent PostgreSQL sessions concurrently
   withdrew `80.00` from `100.00`; one succeeded, one failed, final balance was `20.00`, and exactly
   one history/audit pair was added.
@@ -570,18 +570,21 @@ Completion evidence:
 ## M5 — Admin Backend `[SUBMISSION]`
 
 ### Phase 24 — Admin dashboard summary
-Status: NOT STARTED
-- [ ] Admin service computing aggregates
-- [ ] Route gated by `require_role(ADMIN)`; money as strings
-- [ ] Add admin/customer 403 tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Admin service computing aggregates
+- [x] Route gated by `require_role(ADMIN)`; money as strings
+- [x] Add admin/customer 403 tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused dashboard tests `3 passed`; full suite `105 passed, 1 existing warning`; Ruff
+  passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn returned the dashboard to ADMIN with string total balance and
+  returned 403 `FORBIDDEN` to CUSTOMER.
 - Commit:
-- Notes:
+- Notes: Summary includes customer count, account count, total simulated balance, and transaction
+  count over an explicit 30-day window. Customer endpoints and ownership logic are not reused.
 
 ### Phase 25 — Customer list & detail
 Status: NOT STARTED

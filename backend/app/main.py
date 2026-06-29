@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes.accounts import router as accounts_router
+from app.api.routes.admin import router as admin_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.money import router as money_router
@@ -45,3 +46,6 @@ app.include_router(money_router, prefix="/api")
 
 # Transfers lock two owned accounts and persist both ledger legs atomically.
 app.include_router(transfers_router, prefix="/api")
+
+# Admin routes use SQL-backed role checks and never reuse customer ownership dependencies.
+app.include_router(admin_router, prefix="/api")
