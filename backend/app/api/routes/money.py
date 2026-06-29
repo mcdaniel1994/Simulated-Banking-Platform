@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.models import Account
 from app.schemas.account import AccountResponse
 from app.schemas.money import MoneyAmountRequest
-from app.services.money_service import deposit
+from app.services.money_service import deposit, withdraw
 
 router = APIRouter(tags=["money"])
 
@@ -28,6 +28,27 @@ def deposit_route(
 
     # The service re-loads this authorized account under a row lock before reading its balance.
     return deposit(
+        db,
+        customer=customer,
+        account_id=account.id,
+        amount=request_body.amount,
+    )
+
+
+@router.post(
+    "/accounts/{account_id}/withdrawals",
+    response_model=AccountResponse,
+)
+def withdrawal_route(
+    request_body: MoneyAmountRequest,
+    _csrf: CsrfProtected,
+    customer: CustomerUser,
+    account: OwnedAccount,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> Account:
+    """Apply one CSRF-protected withdrawal without allowing an overdraft."""
+
+    return withdraw(
         db,
         customer=customer,
         account_id=account.id,

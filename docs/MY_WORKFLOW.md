@@ -2375,6 +2375,47 @@ Result: `88 passed, 1 existing warning`.
 
 Commit Phase 20 and implement Phase 21 withdrawal separately.
 
+### Entry — 2026-06-29 — Phase 21: Atomic Withdrawal
+
+#### What I Worked On
+
+I added CSRF-protected withdrawals by reusing the deposit schema, ownership boundary, locked
+account lookup, and transaction pattern. The service checks sufficient funds while holding the row
+lock, then atomically updates balance and adds WITHDRAWAL history and audit rows.
+
+#### What Actually Happened
+
+Five focused tests and all 93 backend tests passed. A real Uvicorn overdraw returned
+`INSUFFICIENT_FUNDS` and left the balance unchanged. Ruff and Alembic checks passed.
+
+#### Concepts I Learned
+
+- The sufficient-funds check must occur after acquiring the lock or concurrent requests can both
+  approve against the same stale balance.
+- Rejected business rules should raise before any history or audit object is added.
+- The database non-negative check remains a final backstop, not the primary user-facing rule.
+
+#### Tests I Added
+
+- Atomic withdrawal balance/history/audit success.
+- Insufficient funds with no balance, transaction, or audit change.
+- FROZEN/CLOSED rejection.
+- Invalid amount and missing-CSRF rejection.
+
+Result: `93 passed, 1 existing warning`.
+
+#### Files I Changed
+
+- `backend/app/services/money_service.py`
+- `backend/app/api/routes/money.py`
+- `backend/tests/api/test_withdrawal.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 21 and implement Phase 22 transfer separately.
+
 ---
 
 ## Long-Term Logs
@@ -2409,6 +2450,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D21 | 2026-06-29 | Publish account balances as two-decimal strings converted directly from `Decimal` | Phase 18 account reads | JSON number; serialized Decimal; schema-level string | A string contract is exact across JSON and JavaScript, and the schema advertises the representation clearly. | Frontend aggregation must use decimal-safe parsing; `user_id` remains omitted from customer responses. |
 | D22 | 2026-06-29 | Use limit/offset pagination with default 20, maximum 100, and newest-first stable ordering | Phase 19 transaction history | Different page sizes; silent clamp; oldest/account-grouped/newest order | Bounded explicit validation limits work; `created_at DESC, id DESC` gives a useful feed and stable timestamp ties. | Invalid bounds return 422; offset pages can shift under concurrent inserts, so cursor pagination remains a future production option. |
 | D23 | 2026-06-29 | Require decimal-string money input and re-lock owned accounts inside mutation services | Phase 20 deposit | JSON number vs string; mutate dependency row vs locked re-query | Exact strings prevent float drift; the locked query makes the balance read concurrency-safe. | Money requests reject floats and excess precision; mutations perform a second ownership-filtered lookup. |
+| D24 | 2026-06-29 | Check withdrawal funds while holding the account row lock | Phase 21 withdrawal | Pre-lock validation; locked validation; database constraint only | Locked validation prevents concurrent requests from approving against one stale balance while returning a useful domain error. | Overdraw returns `INSUFFICIENT_FUNDS`; the database check remains a final backstop. |
 
 ### Debugging Log
 

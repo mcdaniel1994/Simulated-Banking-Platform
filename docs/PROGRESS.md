@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M4 — Banking Domain (in progress)
-- Current phase: Phase 20 — Deposit (complete)
-- Current task: Commit Phase 20, then begin Phase 21
-- Last completed: Phase 20 — Deposit
-- Next action: Commit Phase 20, then implement Phase 21 withdrawal
+- Current phase: Phase 21 — Withdrawal (complete)
+- Current task: Commit Phase 21, then begin Phase 22
+- Last completed: Phase 21 — Withdrawal
+- Next action: Commit Phase 21, then implement Phase 22 transfer
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -23,7 +23,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
-| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–20 complete |
+| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–21 complete |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
@@ -493,33 +493,36 @@ Status: COMPLETE
 - [x] Emit deposit audit row (D2)
 - [x] Add deposit service/API tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused deposit tests `9 passed`; full suite `88 passed, 1 existing warning`; Ruff passed;
   `alembic check` reported no model/schema drift.
 - Manual verification: Real Uvicorn flow rejected missing CSRF with 403, accepted a matching token,
   increased the balance by exactly `1.00`, and persisted the DEPOSIT transaction and audit event.
-- Commit:
+- Commit: `46a3490 feat(money): add atomic deposit with row locking and balance_after`
 - Notes: Money input must be a JSON decimal string, positive, at most 14 digits and 2 decimal
   places. The service re-loads the authorized account under `FOR UPDATE`; balance, history, and
   audit commit atomically.
 
 ### Phase 21 — Withdrawal
-Status: NOT STARTED
-- [ ] Withdrawal request schema (`> 0`)
-- [ ] Service: lock, confirm owned+ACTIVE, `balance >= amount`, decrease, log, commit
-- [ ] Reject insufficient funds (`INSUFFICIENT_FUNDS`, no change)
-- [ ] Emit withdrawal audit row (D2)
-- [ ] Add withdrawal service/API tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Withdrawal request schema (`> 0`)
+- [x] Service: lock, confirm owned+ACTIVE, `balance >= amount`, decrease, log, commit
+- [x] Reject insufficient funds (`INSUFFICIENT_FUNDS`, no change)
+- [x] Emit withdrawal audit row (D2)
+- [x] Add withdrawal service/API tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused withdrawal tests `5 passed`; full suite `93 passed, 1 existing warning`; Ruff
+  passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn overdraw returned 409 `INSUFFICIENT_FUNDS`; the stored balance
+  remained unchanged.
 - Commit:
-- Notes:
+- Notes: The sufficient-funds check runs while the account row lock is held. Successful balance,
+  WITHDRAWAL history, and audit writes commit atomically; all rejection paths roll back.
 
 ### Phase 22 — Transfer (atomic, order-locked)
 Status: NOT STARTED
