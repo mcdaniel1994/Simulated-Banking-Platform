@@ -179,7 +179,7 @@ Status: COMPLETE
 - [x] Verify downgrade/upgrade round-trip
 - [x] Add DB integration test (tables + CHECK)
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `17 passed, 1 existing warning`; Ruff format and lint checks passed across application,
@@ -189,7 +189,7 @@ Completion evidence:
   foreign keys, unique constraints, indexes, and `ck_accounts_balance_nonnegative`; a live
   negative-balance insert failed in the test database; `alembic current` reported `0001 (head)`;
   `alembic check` reported no new upgrade operations.
-- Commit:
+- Commit: `c69f05b feat(db): add Alembic config and initial schema migration`
 - Notes: Alembic configuration contains no database credential. Tests provide their isolated URL
   through a programmatic override and never use the development URL. The reviewed downgrade
   explicitly removes PostgreSQL enum types so re-upgrade is clean. Seed data remains Phase 7.
