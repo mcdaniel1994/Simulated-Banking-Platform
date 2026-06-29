@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session as DatabaseSession
 
 from app.api.deps import CustomerUser, OwnedAccount
+from app.api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from app.db.session import get_db
 from app.models import Transaction
 from app.schemas.transaction import TransactionResponse
@@ -11,9 +12,6 @@ from app.services.transaction_service import (
     list_account_transactions,
     list_customer_transactions,
 )
-
-DEFAULT_PAGE_SIZE = 20
-MAX_PAGE_SIZE = 100
 
 router = APIRouter(tags=["transactions"])
 

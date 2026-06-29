@@ -2536,6 +2536,42 @@ seed test remained deterministic.
 
 Commit Phase 24 and add administrator customer list/detail reads in Phase 25.
 
+### Entry — 2026-06-29 — Phase 25: Admin Customer Reads
+
+#### What I Worked On
+
+I added ADMIN-only customer listing and customer detail with safe identity fields, accounts, and a
+paginated newest-first transaction slice. Admin queries deliberately bypass customer ownership
+dependencies while still filtering the selected user to the CUSTOMER role.
+
+#### What Actually Happened
+
+The focused admin and shared pagination suites passed 12 tests; all 109 backend tests passed. Real
+Uvicorn returned two customer records and a drill-down with two accounts, string balances, and a
+two-row history page.
+
+#### Security or Reliability Considerations
+
+- Password hashes, sessions, and ADMIN identities are excluded.
+- Missing IDs and ADMIN user IDs share 404.
+- CUSTOMER callers receive 403.
+- Shared pagination constants prevent admin/customer history contracts from drifting.
+
+#### Files I Changed
+
+- `backend/app/api/pagination.py`
+- `backend/app/api/routes/transactions.py`
+- `backend/app/api/routes/admin.py`
+- `backend/app/schemas/admin.py`
+- `backend/app/services/admin_service.py`
+- `backend/tests/api/test_admin_customers.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 25 and implement status controls in Phase 26.
+
 ---
 
 ## Long-Term Logs
@@ -2574,6 +2610,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D25 | 2026-06-29 | Lock transfer accounts in ascending ID order and test rollback after flush | Phase 22 transfer | Request order; sorted order; shallow pre-flush failure; post-flush failure | Sorted locks avoid deadlocks; post-flush failure proves database atomicity after statements execute. | Transfer parent, balances, two legs, and audit share one commit and fully roll back together. |
 | D26 | 2026-06-29 | Keep reconciliation test-only for the MVP and verify concurrency with independent PostgreSQL sessions | Phase 23 integrity verification | Admin endpoint; helper plus DB tests; sequential simulation | The MVP requires proof, not an admin feature; independent sessions exercise real row locks. | M4 closes with reconciliation and no-overdraft evidence without extension scope. |
 | D27 | 2026-06-29 | Define recent dashboard activity as a 30-day transaction count and exclude ADMIN from customer totals | Phase 24 admin dashboard | All-time vs windowed activity; all users vs customers | Explicit semantics make aggregates testable and match the management domain. | Static seed may show zero recent rows; real activity updates the metric naturally. |
+| D28 | 2026-06-29 | Keep admin customer drill-down queries separate from customer ownership dependencies | Phase 25 admin reads | Reuse `OwnedAccount`; dedicated admin queries | Admins need management visibility but must not become account owners. | Admin reads filter CUSTOMER identities directly and share only response/pagination contracts. |
 
 ### Debugging Log
 

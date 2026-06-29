@@ -1,6 +1,33 @@
+from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from app.schemas.account import AccountResponse
+from app.schemas.transaction import TransactionResponse
+
+
+class AdminCustomerResponse(BaseModel):
+    """Safe customer identity and lifecycle fields for administrator reads."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    is_active: bool
+    created_at: datetime
+
+
+class AdminCustomerDetailResponse(BaseModel):
+    """One customer with owned accounts and a paginated transaction slice."""
+
+    customer: AdminCustomerResponse
+    accounts: list[AccountResponse]
+    transactions: list[TransactionResponse]
+    transaction_limit: int
+    transaction_offset: int
 
 
 class AdminDashboardResponse(BaseModel):

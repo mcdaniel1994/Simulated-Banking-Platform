@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M5 — Admin Backend (in progress)
-- Current phase: Phase 24 — Admin dashboard (complete)
-- Current task: Commit Phase 24, then begin Phase 25
-- Last completed: Phase 24 — Admin dashboard
-- Next action: Commit Phase 24, then implement Phase 25 admin reads
+- Current phase: Phase 25 — Admin customer reads (complete)
+- Current task: Commit Phase 25, then begin Phase 26
+- Last completed: Phase 25 — Admin customer reads
+- Next action: Commit Phase 25, then implement Phase 26 status controls
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -24,7 +24,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
-| M5 — Admin Backend | IN PROGRESS | 2026-06-29 |  | Phase 24 complete |
+| M5 — Admin Backend | IN PROGRESS | 2026-06-29 |  | Phases 24–25 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
 | M8 — Customer Frontend | NOT STARTED |  |  |  |
@@ -575,31 +575,34 @@ Status: COMPLETE
 - [x] Route gated by `require_role(ADMIN)`; money as strings
 - [x] Add admin/customer 403 tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused dashboard tests `3 passed`; full suite `105 passed, 1 existing warning`; Ruff
   passed; `alembic check` reported no model/schema drift.
 - Manual verification: Real Uvicorn returned the dashboard to ADMIN with string total balance and
   returned 403 `FORBIDDEN` to CUSTOMER.
-- Commit:
+- Commit: `f836821 feat(admin): add admin dashboard summary endpoint`
 - Notes: Summary includes customer count, account count, total simulated balance, and transaction
   count over an explicit 30-day window. Customer endpoints and ownership logic are not reused.
 
 ### Phase 25 — Customer list & detail
-Status: NOT STARTED
-- [ ] List customers (admin-only)
-- [ ] Customer detail (accounts + paginated transactions)
-- [ ] Ensure admin reads don't reuse ownership dep
-- [ ] Add admin read tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] List customers (admin-only)
+- [x] Customer detail (accounts + paginated transactions)
+- [x] Ensure admin reads don't reuse ownership dep
+- [x] Add admin read tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused admin/customer pagination tests `12 passed`; full suite `109 passed, 1 existing
+  warning`; Ruff passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn admin list returned two customers; detail returned two
+  accounts, a two-row transaction page, and string money.
 - Commit:
-- Notes:
+- Notes: Admin queries filter CUSTOMER users directly and do not use customer ownership
+  dependencies. Customer detail reuses the shared 20/100 pagination contract.
 
 ### Phase 26 — Status controls (deactivate / freeze)
 Status: NOT STARTED
