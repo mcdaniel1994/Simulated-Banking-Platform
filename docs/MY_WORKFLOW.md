@@ -5,6 +5,37 @@ checked off. [PROGRESS.md](PROGRESS.md) tracks *status*; this file captures *thi
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) is the roadmap; [../SPEC.md](../SPEC.md) is the
 source of truth.
 
+## How I Reached the Specification
+
+I started by using ChatGPT to brainstorm the banking application I wanted to build. That process
+helped me turn a broad project idea into something more concrete by identifying the important
+features, architectural decisions, security concerns, and trade-offs I would need to understand.
+Working through those questions eventually gave me enough clarity to create `SPEC.md` as the
+project's source of truth.
+
+After creating the specification, I used Claude Code to pressure-test it. We walked through the
+decisions, looked for missing requirements or contradictions, and separated the work required for
+the CS50x submission from production hardening and optional extensions. Claude Code then helped me
+turn the specification into a phased implementation plan.
+
+This process lets me use AI as a planning and review tool while keeping control of the development
+work. Instead of asking an AI to build the entire application at once, I can work through one
+feature at a time, understand why it belongs in the architecture, implement it myself, and verify
+it before moving forward.
+
+I added the `docs/` folder so each planning document has one clear responsibility:
+
+- `IMPLEMENTATION_PLAN.md` turns the specification into an ordered roadmap with small phases,
+  tests, completion criteria, and stopping points.
+- `PROGRESS.md` is the operational checklist that tells me what is complete, what I am working on,
+  and what comes next.
+- `MY_WORKFLOW.md` is my learning journal. It records how I reached decisions, what I tried, what
+  went wrong, and what I learned along the way.
+
+Together, these files keep the product requirements, implementation order, current status, and my
+reasoning separate but connected. That makes it easier for me to stay in control of the scope and
+develop the application one feature at a time.
+
 ## How I Use This File
 
 - **During each phase**, I start a dated entry from the template below and record what I expected,

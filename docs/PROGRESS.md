@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M0 — Decisions & Prep
-- Current phase: Phase 0 — Confirm open decisions
-- Current task: Decide D1–D4
-- Last completed: Planning docs created
-- Next action: Verify the Phase 0 decision records and commit the completed phase
+- Current milestone: M0 — Decisions & Prep (complete)
+- Current phase: Phase 0 — Confirm open decisions (complete)
+- Current task: Phase 0 closed
+- Last completed: Phase 0 — Confirm open decisions
+- Next action: Begin Phase 1 — Repository structure & tooling
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -19,7 +19,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 | Milestone | Status | Started | Completed | Notes |
 |---|---|---|---|---|
-| M0 — Decisions & Prep | IN PROGRESS | 2026-06-29 |  | Resolve D1–D4 |
+| M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | NOT STARTED |  |  |  |
 | M2 — Database | NOT STARTED |  |  |  |
 | M3 — Authentication & Authorization | NOT STARTED |  |  |  |
@@ -40,20 +40,20 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## M0 — Decisions & Prep `[SUBMISSION]`
 
 ### Phase 0 — Confirm open decisions
-Status: IN PROGRESS
+Status: COMPLETE
 - [x] D1 — session lifetimes (idle / absolute) decided: 30 minutes / 12 hours
 - [x] D2 — Include minimal AuditEvent table and audit writes in MVP
 - [x] D3 — nginx selected as the production reverse proxy
 - [x] D4 — lightweight query helpers selected; services remain primary
 - [x] Record all four in MY_WORKFLOW.md ADR log
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests: —
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: — (decision and documentation phase; no tests required)
+- Manual verification: D1–D4 each have a recorded choice, rationale, and consequence.
+- Commit: `639e578 docs: record session lifetime, audit, proxy, and repository decisions`
+- Notes: Local Git repository initialized; default branch renamed to `main`.
 
 ---
 
