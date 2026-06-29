@@ -130,7 +130,7 @@ Status: COMPLETE
 - [x] Add the `get_db` dependency
 - [x] Add connectivity check + test
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `12 passed, 1 existing warning`; Ruff format and lint checks passed.
@@ -140,7 +140,7 @@ Completion evidence:
   to and created/dropped schema objects in both databases; the runtime engine connected to the
   development database; database tests used only the isolated test database and proved cleanup
   plus rollback behavior.
-- Commit:
+- Commit: `fea719f feat(db): add Docker PostgreSQL and SQLAlchemy session infrastructure`
 - Notes: PostgreSQL alone runs in Docker; FastAPI remains local. The official image's bootstrap
   administrator is separate from the least-privilege application role. Initialization SQL runs
   only for an empty Compose volume. Alembic remains Phase 6 and was not initialized.
