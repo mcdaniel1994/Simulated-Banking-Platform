@@ -156,7 +156,7 @@ Status: COMPLETE
 - [x] Wire relationships and register on metadata
 - [x] Add model unit tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `16 passed, 1 existing warning`; Ruff format and lint checks passed.
@@ -165,7 +165,7 @@ Completion evidence:
   and `audit_events`, with required columns, named enums, indexes, foreign keys,
   `NUMERIC(14,2)` money types, timezone-aware timestamps, uniqueness, and the nonnegative-balance
   check represented in metadata.
-- Commit:
+- Commit: `26533c3 feat(models): add banking database models and relationships`
 - Notes: Integer primary keys were selected because the specification does not require UUIDs.
   Models deliberately have no implicit delete cascades. No tables or migrations were created;
   Alembic and live constraint enforcement remain Phase 6.
