@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hmac import compare_digest
@@ -12,7 +13,7 @@ from sqlalchemy.orm import joinedload
 from app.core.config import get_settings
 from app.core.security import get_session_cookie_name, hash_session_token
 from app.db.session import get_db
-from app.models import Session, User
+from app.models import Session, User, UserRole
 
 UNAUTHENTICATED_ERROR = {
     "error": {
@@ -30,6 +31,14 @@ CSRF_INVALID_ERROR = {
     }
 }
 
+FORBIDDEN_ERROR = {
+    "error": {
+        "code": "FORBIDDEN",
+        "message": "Insufficient permissions",
+        "fields": {},
+    }
+}
+
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
@@ -39,6 +48,10 @@ class UnauthenticatedError(Exception):
 
 class CsrfInvalidError(Exception):
     """Internal signal for a missing or mismatched double-submit token."""
+
+
+class ForbiddenError(Exception):
+    """Internal signal for an authenticated user with the wrong SQL role."""
 
 
 @dataclass(frozen=True)
@@ -70,6 +83,18 @@ async def csrf_invalid_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
         content=CSRF_INVALID_ERROR,
+    )
+
+
+async def forbidden_exception_handler(
+    _request: Request,
+    _error: ForbiddenError,
+) -> JSONResponse:
+    """Return one public response for every authenticated role mismatch."""
+
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content=FORBIDDEN_ERROR,
     )
 
 
@@ -151,6 +176,22 @@ def get_current_user(
     return principal.user
 
 
+def require_role(required_role: UserRole) -> Callable[[User], User]:
+    """Build a reusable guard that trusts only the authenticated SQL user."""
+
+    def role_dependency(user: Annotated[User, Depends(get_current_user)]) -> User:
+        # The role arrived through the database-backed session lookup, never request input.
+        if user.role is not required_role:
+            raise ForbiddenError
+        return user
+
+    return role_dependency
+
+
 CurrentPrincipal = Annotated[AuthenticatedPrincipal, Depends(get_current_principal)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CsrfProtected = Annotated[None, Depends(verify_csrf_token)]
+
+# Named aliases keep route signatures explicit while sharing the same role-checking factory.
+AdminUser = Annotated[User, Depends(require_role(UserRole.ADMIN))]
+CustomerUser = Annotated[User, Depends(require_role(UserRole.CUSTOMER))]

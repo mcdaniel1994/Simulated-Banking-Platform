@@ -1617,6 +1617,120 @@ application and preserves intentional exceptions such as login.
 Review and commit Phase 13. Stop before Phase 14 so role authorization remains its own bounded
 security phase.
 
+### Entry — 2026-06-29 — Phase 14: Role Authorization
+
+#### What I Worked On
+
+I added a `require_role(...)` FastAPI dependency factory built on the authenticated SQL user, plus
+named `AdminUser` and `CustomerUser` aliases for future route signatures. A role mismatch now maps
+to the stable 403 `FORBIDDEN` envelope.
+
+I also moved the existing migrated, seeded authentication test fixture into shared test
+configuration so focused authorization API tests could reuse the real session and SQL-user path.
+
+#### What I Expected to Happen
+
+I expected each seeded user to pass the matching role guard and fail the opposite guard with the
+same 403 response. Supplying a role-like request header should have no effect because the
+dependency reads only `User.role` after server-side session resolution.
+
+#### What Actually Happened
+
+Four focused API cases passed: ADMIN and CUSTOMER each reached their matching guard, and each was
+denied by the opposite guard. The denial cases included spoofed `X-Role` headers, which the backend
+ignored. The full suite passed with 49 tests and the one existing TestClient warning. Ruff passed,
+and Alembic reported no drift.
+
+A real Uvicorn flow against test-only probe routes reproduced both 200 allow results and both 403
+`FORBIDDEN` denials without exposing session or CSRF cookie values.
+
+#### Concepts I Learned
+
+- Authentication establishes identity; role authorization decides whether that authenticated
+  identity may enter a category of route.
+- A role mismatch is 403 because the server knows who the caller is but refuses that operation.
+- Returning the authorized `User` lets later routes use one dependency for both the guard and the
+  trusted principal without another lookup.
+- Named role aliases make a route's security requirement visible in its function signature.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Role guard shape | Separate ADMIN/CUSTOMER functions; parameterized factory | `require_role(...)` factory with named aliases | One implementation prevents the two guards from drifting while aliases keep routes readable. | Closure-based dependencies are slightly less direct to newcomers. |
+| Trusted role source | Header/body/cookie; authenticated SQL `User.role` | SQL user only | The backend database is the authorization source of truth required by the specification. | Every role-gated route performs the normal session/user database resolution. |
+| Phase 14 test surface | Add premature product route; call dependency directly; test-only HTTP probes | Test-only probes | HTTP tests verify FastAPI dependency wiring and the public envelope without inventing Phase 24 admin behavior. | Manual smoke uses the test module rather than a product endpoint that does not exist yet. |
+
+#### Problems I Encountered
+
+- The reusable authenticated-client fixture was local to `test_auth.py`, so a focused
+  authorization module could not consume it cleanly.
+- The first full-suite command could not initialize uv's cache under the managed filesystem.
+
+#### How I Diagnosed Them
+
+- I inspected fixture scope and avoided importing one test module from another.
+- The uv error identified its user-cache path before pytest started.
+
+#### How I Solved Them
+
+- I moved the unchanged fixture setup into `tests/conftest.py`, where pytest shares it naturally.
+- I reran the bounded `uv run` gate with the already approved cache access.
+
+#### Tests I Added
+
+- An ADMIN SQL user passes the ADMIN guard.
+- A CUSTOMER SQL user passes the CUSTOMER guard.
+- A CUSTOMER receives 403 `FORBIDDEN` from the ADMIN guard despite an `X-Role: ADMIN` header.
+- An ADMIN receives 403 `FORBIDDEN` from the CUSTOMER guard despite an `X-Role: CUSTOMER` header.
+
+Result: `49 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest tests/api/test_authorization.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn tests.api.test_authorization:app --host 127.0.0.1 --port 8014
+```
+
+#### Files I Changed
+
+- `backend/app/api/deps.py`
+- `backend/app/main.py`
+- `backend/tests/conftest.py`
+- `backend/tests/api/test_auth.py`
+- `backend/tests/api/test_authorization.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Role values from headers, request bodies, and cookies never enter the authorization decision.
+- Both roles use the same deny contract, which reveals no extra permission detail.
+- The guard returns the exact authenticated SQL user, preserving one trusted principal path.
+- Permission-denied audit writes required by SPEC §16 remain future work; Phase 14's explicit scope
+  contains only the reusable role boundary and its response contract.
+
+#### What I Would Do Differently
+
+Once real customer and admin routes exist, I will keep these dependency-level tests and add route
+contract tests at those product endpoints instead of relying only on probes.
+
+#### Questions I Still Have
+
+- Which later phase should own persistence of permission-denied audit events before final MVP
+  acceptance? Phase 17's centralized errors or the first real role-gated routes are natural points.
+
+#### Next Step
+
+Review and commit Phase 14. Stop before Phase 15 so ownership authorization and its 404 anti-IDOR
+behavior remain a separate bounded phase.
+
 ---
 
 ## Long-Term Logs
@@ -1644,6 +1758,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D14 | 2026-06-29 | Return a user/session principal, expire inclusively, and slide idle activity on every valid request | Phase 11 session resolution | User only vs principal; exclusive vs inclusive boundary; thresholded vs every request | The principal supports logout reuse, inclusive deadlines fail closed, and per-request sliding matches the approved plan. | Authenticated requests commit `last_used_at`; Phase 12 can revoke the resolved session directly. |
 | D15 | 2026-06-29 | Require a valid principal for logout and atomically pair revocation with its audit | Phase 12 logout | Idempotent invalid logout; valid-only logout; separate vs shared commit | A concrete resolved session supports durable revocation proof and consistent audit history. | Invalid cookies return 401; both cookies are cleared only after revocation commits; Phase 13 adds CSRF. |
 | D16 | 2026-06-29 | Use an explicit reusable CSRF dependency with constant-time comparison before authentication | Phase 13 mutation protection | Inline checks; global middleware; per-route dependency; auth-first vs CSRF-first | A named dependency keeps mutation protection visible and reusable, while early rejection avoids session activity from invalid cross-site requests. | Login and safe methods are exempt; every future POST/PATCH route must attach `CsrfProtected`; invalid unsafe requests receive 403 before authentication runs. |
+| D17 | 2026-06-29 | Build parameterized SQL-backed role guards and expose named ADMIN/CUSTOMER aliases | Phase 14 role authorization | Separate guard functions; one factory; inline route checks | One factory prevents policy drift, while aliases keep each route's required role visible and return the already authenticated SQL user. | Client role input is ignored; mismatches share a 403 `FORBIDDEN` envelope; future protected routes must choose the appropriate alias. |
 
 ### Debugging Log
 

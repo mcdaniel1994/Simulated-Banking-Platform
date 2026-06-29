@@ -1,25 +1,15 @@
-from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from app.api.deps import CSRF_INVALID_ERROR, UNAUTHENTICATED_ERROR, _session_is_expired
 from app.core.security import HOST_SESSION_COOKIE_NAME, hash_session_token
-from app.db.session import get_db
-from app.main import app
 from app.models import AuditEvent, Session, User
-from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD, seed_database
+from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD
 from argon2 import PasswordHasher, Type
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session as DatabaseSession
 from sqlalchemy.orm import sessionmaker
-
-from tests.conftest import DatabaseTestSettings
-
-BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 # Tests assert the complete public contract so future refactors cannot reintroduce enumeration.
 GENERIC_LOGIN_ERROR = {
@@ -29,63 +19,6 @@ GENERIC_LOGIN_ERROR = {
         "fields": {},
     }
 }
-
-
-@pytest.fixture
-def login_test_context(
-    database_test_settings: DatabaseTestSettings,
-    test_engine: Engine,
-    test_session_factory: sessionmaker[DatabaseSession],
-) -> Generator[tuple[TestClient, sessionmaker[DatabaseSession]], None, None]:
-    # Recreate only test data while applying the same migration and seed used by development.
-    alembic_config = Config(BACKEND_ROOT / "alembic.ini")
-    alembic_config.attributes["database_url"] = (
-        database_test_settings.test_database_url.get_secret_value()
-    )
-    command.upgrade(alembic_config, "head")
-    with test_engine.begin() as connection:
-        connection.execute(
-            text(
-                """
-                TRUNCATE TABLE
-                    transactions, transfers, sessions, audit_events, accounts, users
-                RESTART IDENTITY CASCADE
-                """
-            )
-        )
-
-    seed_session = test_session_factory()
-    try:
-        # Production seed logic supplies real Argon2 users instead of hand-built authentication mocks.
-        seed_database(seed_session)
-    finally:
-        seed_session.close()
-
-    def override_get_db() -> Generator[DatabaseSession, None, None]:
-        # FastAPI receives request-scoped sessions bound only to simulated_banking_test.
-        db = test_session_factory()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    try:
-        with TestClient(app, base_url="https://testserver") as client:
-            yield client, test_session_factory
-    finally:
-        # Restore global FastAPI state and remove every row created by the current test.
-        app.dependency_overrides.clear()
-        with test_engine.begin() as connection:
-            connection.execute(
-                text(
-                    """
-                    TRUNCATE TABLE
-                        transactions, transfers, sessions, audit_events, accounts, users
-                    RESTART IDENTITY CASCADE
-                    """
-                )
-            )
 
 
 def test_successful_login_creates_hashed_session_audit_and_secure_cookies(
