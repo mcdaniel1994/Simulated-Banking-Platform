@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M1 — Repo & Backend Foundation
-- Current phase: Phase 1 — Repository structure & tooling
-- Current task: Review and commit the completed Phase 1 foundation
-- Last completed: Phase 0 — Confirm open decisions
-- Next action: Commit Phase 1 after reviewing its documentation
+- Current phase: Phase 1 — Repository structure & tooling (complete)
+- Current task: Phase 1 closed
+- Last completed: Phase 1 — Repository structure & tooling
+- Next action: Begin Phase 2 — FastAPI app + health endpoint
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -60,7 +60,7 @@ Completion evidence:
 ## M1 — Repo & Backend Foundation `[SUBMISSION]`
 
 ### Phase 1 — Repository structure & tooling
-Status: IN PROGRESS
+Status: COMPLETE
 - [x] Select uv for environment and dependency management
 - [x] Create backend package skeleton directories
 - [x] Create and activate a Python 3.12 virtual environment
@@ -71,13 +71,13 @@ Status: IN PROGRESS
 - [x] Confirm pytest collects zero tests without import or collection errors
 - [x] Add backend, application-package, and test-suite guides
 - [x] Record decisions and learning notes in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `pytest --collect-only` found zero tests without collection errors (expected exit code 5).
 - Manual verification: `import app` succeeded; all dependency imports succeeded; Ruff reported 14
   files formatted and all lint checks passing; `.venv` and secret env files are ignored.
-- Commit: Pending — `chore: initialize backend structure and tooling`
+- Commit: `9abc2a1 chore: initialize backend structure and tooling`
 - Notes: Runtime and development dependencies are separated; exact versions are stored in
   `uv.lock`. No application behavior exists yet.
 
