@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M3 — Authentication & Authorization (in progress)
-- Current phase: Phase 10 — Login endpoint and cookie issuance (complete)
-- Current task: Review and commit the completed Phase 10 batch
-- Last completed: Phase 10 — Login endpoint and cookie issuance
-- Next action: Review and commit Phase 10, then begin Phase 11 separately
+- Current phase: Phase 11 — Current-session/current-user dependency (complete)
+- Current task: Review and commit the completed Phase 11 batch
+- Last completed: Phase 11 — Current-session/current-user dependency
+- Next action: Review and commit Phase 11, then begin Phase 12 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–10 complete |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–11 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -272,7 +272,7 @@ Status: COMPLETE
 - [x] Emit login success/failure audit rows (D2)
 - [x] Add API tests (session row + cookie attributes)
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `34 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
@@ -282,27 +282,32 @@ Completion evidence:
   `Max-Age=43200`; the separate CSRF cookie was readable and otherwise identically scoped.
   PostgreSQL stored one 64-character token hash with a 12-hour lifetime and a `login_success`
   audit event.
-- Commit:
+- Commit: `8cb74b3 feat(auth): add login endpoint with server-side session and secure cookies`
 - Notes: Unknown email, wrong password, and inactive user return the same 401 envelope. Unknown
   users still incur Argon2 verification to reduce timing clues. Login establishes the session and
   issues the CSRF cookie; Phase 13 will enforce double-submit CSRF on subsequent mutations.
 
 ### Phase 11 — Current-session / current-user dependency
-Status: NOT STARTED
-- [ ] Resolve session by token hash
-- [ ] Reject missing/invalid/expired/revoked → 401
-- [ ] Slide `last_used_at` (idle timeout)
-- [ ] Load and return the User
-- [ ] Implement `GET /api/auth/me`
-- [ ] Add API tests (incl. expiry/revocation)
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Resolve session by token hash
+- [x] Reject missing/invalid/expired/revoked → 401
+- [x] Slide `last_used_at` (idle timeout)
+- [x] Load and return the User
+- [x] Implement `GET /api/auth/me`
+- [x] Add API tests (incl. expiry/revocation)
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `41 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
+  reported no model/schema drift.
+- Manual verification: Real Uvicorn flow completed login → `/api/auth/me` with safe user fields;
+  after expiring that exact hashed session row, reuse of the same in-memory cookie returned the
+  stable 401 `UNAUTHENTICATED` envelope.
 - Commit:
-- Notes:
+- Notes: Missing, unknown, revoked, absolute-expired, idle-expired, and inactive-user sessions use
+  one public failure. Absolute and idle boundaries are inclusive. Every valid request commits a
+  new `last_used_at`, matching the plan's explicit sliding-window decision. Phase 12 was not started.
 
 ### Phase 12 — Logout & server-side revocation
 Status: NOT STARTED

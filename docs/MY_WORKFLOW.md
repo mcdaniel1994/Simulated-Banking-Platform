@@ -1292,6 +1292,117 @@ because later API and service suites naturally need the same isolation boundary.
 Review and commit Phase 10. Stop before Phase 11 so session resolution, expiry/revocation checks,
 sliding idle activity, and `/auth/me` remain one separate phase.
 
+### Entry — 2026-06-29 — Phase 11: Current Session and Current User
+
+#### What I Worked On
+
+I added the FastAPI dependency that resolves the raw auth cookie to its HMAC lookup hash, loads the
+server-side session and user, enforces revocation plus both expiry clocks, slides idle activity, and
+provides `GET /api/auth/me`.
+
+#### What I Expected to Happen
+
+I expected only valid, active, non-expired SQL sessions to resolve. Missing, unknown, revoked,
+absolute-expired, idle-expired, and inactive-user states should all produce the same 401 envelope,
+while successful requests update `last_used_at` and return safe user fields.
+
+#### What Actually Happened
+
+The dependency resolved valid sessions by their indexed hash, loaded the related user, updated idle
+activity, and returned the seeded administrator through `/api/auth/me`. Tests proved every invalid
+state and exact idle/absolute boundaries fail closed.
+
+A real server flow logged in, returned safe user data from `/auth/me`, then returned 401 when the
+same session row was expired and the same cookie was reused. The full suite passed with 41 tests
+and the existing FastAPI TestClient warning; Alembic found no drift.
+
+#### Concepts I Learned
+
+- Authentication dependencies turn an untrusted cookie into a validated SQL-backed principal.
+- Absolute expiry never moves, while idle expiry slides only after accepted activity.
+- Revocation and user activation are server-side state, so cookie possession alone is insufficient.
+- Inclusive expiry boundaries avoid a session being accepted at the exact instant it expires.
+- Returning a principal containing both user and session avoids repeating lookup work for logout.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Dependency result | Return user only; return user and session principal | Principal containing both | Routes use the user now, and Phase 12 can revoke the already validated session. | One small dataclass becomes part of the auth dependency boundary. |
+| Idle update frequency | Thresholded writes; update every valid request | Update every valid request | The implementation plan explicitly chooses a sliding update on each request. | Authenticated reads perform one database write/commit. |
+| Expiry boundary | Expire after `>`; expire at `>=` | Inclusive expiration | A session is invalid at the configured deadline, not one request later. | Boundary tests must use aware timestamps precisely. |
+| Error rendering | FastAPI detail; narrow auth exception handler | Stable `UNAUTHENTICATED` envelope | All auth failures already honor the public contract before Phase 17. | Phase 17 will consolidate this narrow handler. |
+
+#### Problems I Encountered
+
+- There were no implementation failures after the Phase 10 fixture promotion and dependency-style
+  correction.
+
+#### How I Diagnosed Them
+
+- Targeted tests exercised valid, missing, invalid, revoked, expired, idle-boundary, and inactive
+  paths before the full suite.
+
+#### How I Solved Them
+
+- I used one joined session/user query, centralized validity checks in the dependency, and committed
+  the idle timestamp only after every guard passed.
+
+#### Tests I Added
+
+- Valid `/auth/me` response contains only safe user fields.
+- Valid activity slides `last_used_at`.
+- Missing and unknown cookies return identical 401 envelopes.
+- Revoked, absolute-expired, and exactly idle-expired sessions are rejected.
+- Sessions belonging to inactive users are rejected.
+
+Result: `41 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run pytest tests/api/test_auth.py -q
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+#### Files I Changed
+
+- `backend/app/api/deps.py`
+- `backend/app/schemas/auth.py`
+- `backend/app/api/routes/auth.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_auth.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Raw cookies are HMACed before SQL lookup and never logged.
+- Every invalid session state uses the same response envelope.
+- Inactive users cannot continue operating with an otherwise valid session.
+- Safe response schemas exclude password hashes, sessions, and audit relationships.
+- Idle activity is committed only after all authentication guards succeed.
+
+#### What I Would Do Differently
+
+At larger scale, I would evaluate thresholded idle updates to reduce write amplification, but the
+per-request update is clearer and matches this project's explicit learning plan.
+
+#### Questions I Still Have
+
+- Phase 12 must decide whether logout should require a currently valid session or remain idempotent
+  when the cookie is already invalid; the plan currently builds logout on the valid principal.
+
+#### Next Step
+
+Review and commit Phase 11. Stop before Phase 12 so logout revocation, cookie clearing, and logout
+audit behavior remain one separate phase.
+
 ---
 
 ## Long-Term Logs
@@ -1316,6 +1427,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D11 | 2026-06-29 | Seed fixed synthetic users and varied reconciliation-safe history without deleting existing account activity | Phase 7 demo data | Minimal opening balances; delete/rebuild; create-once history | Stable natural keys and create-once history make reruns safe while preserving append-only transactions. | Public `.test` credentials are fixed; partial account-pair drift fails; full pre-submission reset would require an explicit destructive workflow. |
 | D12 | 2026-06-29 | Generate 256-bit opaque tokens and store HMAC-SHA256 lookup hashes keyed by `SESSION_SECRET` | Phase 9 token storage | Plain SHA-256; concatenated pepper; HMAC-SHA256 | HMAC is a standard deterministic keyed construction that supports indexed lookup while limiting database-only compromise. | Raw tokens stay cookie-only; hashes are 64 hex characters; rotating `SESSION_SECRET` invalidates all sessions. |
 | D13 | 2026-06-29 | Use enumeration-resistant login, host-prefixed auth cookies, and minimal cookie-only session output | Phase 10 login composition | Early unknown-user return; generic timing; normal vs host cookie; return user vs status | Dummy Argon2 work, generic envelopes, and `__Host-session` strengthen the first auth boundary without exposing raw tokens. | Domain cookies fall back to `session`; `/auth/me` supplies user state later; Phase 17 centralizes the envelope. |
+| D14 | 2026-06-29 | Return a user/session principal, expire inclusively, and slide idle activity on every valid request | Phase 11 session resolution | User only vs principal; exclusive vs inclusive boundary; thresholded vs every request | The principal supports logout reuse, inclusive deadlines fail closed, and per-request sliding matches the approved plan. | Authenticated requests commit `last_used_at`; Phase 12 can revoke the resolved session directly. |
 
 ### Debugging Log
 

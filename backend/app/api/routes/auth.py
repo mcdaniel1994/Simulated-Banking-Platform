@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session as DatabaseSession
 
+from app.api.deps import CurrentUser
 from app.core.config import get_settings
 from app.core.security import generate_csrf_token, get_session_cookie_name
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, LoginResponse
+from app.schemas.auth import CurrentUserResponse, LoginRequest, LoginResponse
 from app.services.auth_service import LoginFailedError, login
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -83,3 +84,11 @@ def login_route(
         samesite="strict",
     )
     return LoginResponse()
+
+
+@router.get("/me", response_model=CurrentUserResponse)
+def current_user_route(user: CurrentUser) -> CurrentUserResponse:
+    """Return the user resolved from the validated server-side session."""
+
+    # Response validation selects only explicitly safe fields from the ORM model.
+    return CurrentUserResponse.model_validate(user)

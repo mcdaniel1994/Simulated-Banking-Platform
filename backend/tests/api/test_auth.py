@@ -1,9 +1,11 @@
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from alembic import command
 from alembic.config import Config
+from app.api.deps import UNAUTHENTICATED_ERROR, _session_is_expired
 from app.core.security import HOST_SESSION_COOKIE_NAME, hash_session_token
 from app.db.session import get_db
 from app.main import app
@@ -226,3 +228,120 @@ def test_successful_login_rehashes_outdated_password_parameters(
         updated_hash = db.scalar(select(User.password_hash).where(User.email == ADMIN_EMAIL))
         assert updated_hash is not None
         assert updated_hash != weak_hash
+
+
+def test_auth_me_returns_safe_user_and_slides_idle_activity(
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert login_response.status_code == 200
+
+    with session_factory() as db:
+        original_last_used = db.scalar(select(Session.last_used_at))
+        assert original_last_used is not None
+
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 1,
+        "email": ADMIN_EMAIL,
+        "first_name": "Avery",
+        "last_name": "Admin",
+        "role": "ADMIN",
+        "is_active": True,
+    }
+    assert "password_hash" not in response.text
+
+    with session_factory() as db:
+        updated_last_used = db.scalar(select(Session.last_used_at))
+        assert updated_last_used is not None
+        assert updated_last_used > original_last_used
+
+
+def test_session_expiry_boundaries_are_inclusive() -> None:
+    now = datetime(2026, 6, 29, 12, tzinfo=UTC)
+    session = Session(
+        user_id=1,
+        token_hash="a" * 64,
+        created_at=now - timedelta(hours=1),
+        last_used_at=now - timedelta(minutes=30),
+        expires_at=now + timedelta(hours=1),
+    )
+
+    # Exactly reaching the idle or absolute deadline must fail closed.
+    assert _session_is_expired(session, now, idle_minutes=30)
+    session.last_used_at = now
+    session.expires_at = now
+    assert _session_is_expired(session, now, idle_minutes=30)
+
+
+def test_auth_me_rejects_missing_and_invalid_session_tokens(
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, _session_factory = login_test_context
+    missing_response = client.get("/api/auth/me")
+
+    client.cookies.set(HOST_SESSION_COOKIE_NAME, "invalid-session-token")
+    invalid_response = client.get("/api/auth/me")
+
+    assert missing_response.status_code == 401
+    assert invalid_response.status_code == 401
+    assert missing_response.json() == invalid_response.json() == UNAUTHENTICATED_ERROR
+
+
+@pytest.mark.parametrize("invalid_state", ["revoked", "absolute_expired", "idle_expired"])
+def test_auth_me_rejects_invalid_server_side_session_state(
+    invalid_state: str,
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert login_response.status_code == 200
+
+    now = datetime.now(UTC)
+    with session_factory() as db:
+        session = db.scalar(select(Session))
+        assert session is not None
+        if invalid_state == "revoked":
+            session.revoked_at = now
+        elif invalid_state == "absolute_expired":
+            session.expires_at = now
+        else:
+            # Equality is the boundary: exactly 30 idle minutes is already expired.
+            session.last_used_at = now - timedelta(minutes=30)
+        db.commit()
+
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 401
+    assert response.json() == UNAUTHENTICATED_ERROR
+
+
+def test_auth_me_rejects_session_for_inactive_user(
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert login_response.status_code == 200
+
+    with session_factory() as db:
+        admin = db.scalar(select(User).where(User.email == ADMIN_EMAIL))
+        assert admin is not None
+        admin.is_active = False
+        db.commit()
+
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 401
+    assert response.json() == UNAUTHENTICATED_ERROR

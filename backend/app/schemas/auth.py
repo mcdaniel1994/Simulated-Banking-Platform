@@ -1,6 +1,8 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.models import UserRole
 
 
 class LoginRequest(BaseModel):
@@ -26,3 +28,17 @@ class LoginResponse(BaseModel):
 
     # User details intentionally wait for the authenticated /auth/me endpoint in Phase 11.
     status: Literal["authenticated"] = "authenticated"
+
+
+class CurrentUserResponse(BaseModel):
+    """Safe authenticated-user fields returned from the SQL-backed session principal."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Password hashes, sessions, and audit relationships never cross the response boundary.
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    role: UserRole
+    is_active: bool
