@@ -597,6 +597,127 @@ draft because the official image intentionally grants `POSTGRES_USER` superuser 
 Review and commit Phase 4. Stop before Phase 5 so ORM models and relationships remain a separate
 phase. Alembic initialization remains deferred to Phase 6.
 
+### Entry — 2026-06-29 — Phase 5: Database Models and Relationships
+
+#### What I Worked On
+
+I defined the six MVP persistence models from SPEC §10: users, server-side sessions, accounts,
+append-only transactions, transfers, and audit events. I connected them through explicit
+relationships and registered all six tables with the shared SQLAlchemy metadata.
+
+#### What I Expected to Happen
+
+I expected SQLAlchemy to configure all relationships without ambiguity, expose the exact required
+columns and indexes through metadata, preserve decimal money precision, and stop short of creating
+physical tables because migrations belong to Phase 6.
+
+#### What Actually Happened
+
+All six tables registered successfully, mapper configuration completed without errors, and model
+instances could be connected through user, account, session, transfer, transaction, and audit
+relationships. Metadata inspection confirmed named enums, `NUMERIC(14,2)`, timezone-aware
+timestamps, uniqueness, foreign keys, indexes, and the account balance check.
+
+The complete suite passed with 16 tests and the existing FastAPI TestClient warning. Ruff
+formatting and linting passed.
+
+#### Concepts I Learned
+
+- SQLAlchemy's typed `Mapped` annotations define both Python-facing attributes and ORM mapping
+  intent.
+- Relationships describe navigation between objects; foreign keys enforce the stored references.
+- Named database enums make migrations and schema inspection deterministic.
+- Declarative metadata can be tested before a migration creates any database tables.
+- ORM delete cascades are dangerous for append-only financial history and audit records.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Primary-key type | Auto-incrementing integer; UUID | Integer | The specification leaves ID type open, and integers keep this learning-focused schema and foreign keys straightforward. | Public IDs are enumerable, so authorization must never rely on obscurity. |
+| Enum persistence | Plain strings; named SQLAlchemy/PostgreSQL enums | Named enums | The domain values are fixed and named enums make invalid states harder to store. | Enum value changes require deliberate migrations. |
+| Relationship deletion | ORM cascades; no implicit cascades | No implicit delete cascades | Transaction and audit history must not disappear because a parent object is removed. | Future deletion policies must be explicit. |
+| Audit metadata attribute | Python attribute named `metadata`; mapped alias | `event_metadata` mapped to SQL column `metadata` | `metadata` is reserved by SQLAlchemy's declarative base. | Python and SQL use different names for this one field. |
+| Model registration | Import models automatically from `Base`; explicit loader and model package | `load_models()` plus `app.models` exports | This avoids circular imports while giving Alembic and metadata checks one deliberate registration point. | Metadata consumers must import the model registry before inspection. |
+
+#### Problems I Encountered
+
+- The Phase 4 database test still asserted that declarative metadata contained no tables.
+- Ruff requested import ordering and formatting for the new modules.
+- Multiple account-to-transfer relationships needed explicit foreign-key selection to avoid
+  ambiguity.
+
+#### How I Diagnosed Them
+
+- The full suite showed the obsolete metadata assertion after all six models registered.
+- Ruff identified the exact files and import block needing mechanical correction.
+- `configure_mappers()` exercised every relationship and confirmed the source/destination mappings.
+
+#### How I Solved Them
+
+- I removed the obsolete empty-metadata assertion and replaced it with stronger Phase 5 metadata
+  coverage.
+- I applied Ruff's import fix and formatter.
+- I specified source and destination transfer foreign keys on both sides of the relationships.
+
+#### Tests I Added
+
+- Metadata contains exactly six expected tables and all specified columns.
+- Money columns use `NUMERIC(14,2)` and all timestamps are timezone-aware.
+- Enum names and values are stable.
+- Required checks, indexes, unique fields, and foreign-key targets are registered.
+- All models construct with exact `Decimal` values and correctly connected relationships.
+
+Result: `16 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest -q
+uv run python -c "from sqlalchemy.orm import configure_mappers; ..."
+```
+
+#### Files I Changed
+
+- `backend/app/db/base.py`
+- `backend/app/models/__init__.py`
+- `backend/app/models/user.py`
+- `backend/app/models/session.py`
+- `backend/app/models/account.py`
+- `backend/app/models/transaction.py`
+- `backend/app/models/transfer.py`
+- `backend/app/models/audit_event.py`
+- `backend/tests/db/test_session.py`
+- `backend/tests/unit/test_models.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- The session model stores only a token hash, never a raw session token.
+- Monetary values use `Decimal`/`NUMERIC(14,2)`, never floating point.
+- The account balance check is represented in metadata as a database integrity backstop.
+- Audit rows can retain history when an actor reference is removed.
+- Relationships do not silently cascade deletion into transaction or audit history.
+
+#### What I Would Do Differently
+
+I would remove phase-specific assertions such as "metadata must be empty" when closing the phase
+that introduced them, because later phases intentionally invalidate that temporary condition.
+
+#### Questions I Still Have
+
+- Should account numbers remain short numeric display identifiers or gain a separate masked display
+  representation later? That belongs to the account API/UI phases, not this schema phase.
+
+#### Next Step
+
+Review and commit Phase 5. Stop before Phase 6 so Alembic initialization, migration review, and live
+constraint enforcement remain one separate database-schema phase.
+
 ---
 
 ## Long-Term Logs
@@ -615,6 +736,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D5 | 2026-06-29 | Use synchronous SQLAlchemy sessions and database operations | SPEC §17; row locking for money path | Sync (rec, simpler `FOR UPDATE`); async | I chose synchronous SQLAlchemy because it keeps transaction boundaries, row locking, rollback behavior, and tests easier to follow without adding async complexity that the current requirements do not need. | Routes that perform blocking database work will use normal synchronous dependencies and services; the design favors clarity over the additional I/O concurrency available from an async stack. |
 | D6 | 2026-06-29 | Use uv for Python environment and dependency management | IMPLEMENTATION_PLAN Phase 1; backend tooling and dependency workflow | uv; pip + `requirements.txt`; Poetry | I chose uv because it is already installed, uses the standard `pyproject.toml` format, and provides fast installs with a reproducible lockfile without the extra workflow complexity of Poetry. | I will manage the backend environment and dependencies with uv, commit `pyproject.toml` and `uv.lock`, and run Python tools through `uv run`. |
 | D7 | 2026-06-29 | Run PostgreSQL 16 in Docker Compose with separate dev/test databases and a non-superuser app role | Phase 4 local database isolation | Homebrew PostgreSQL; Docker Compose | Compose gives the banking project a dedicated volume/network while explicit test URL checks protect development data. | FastAPI stays local; host 5433 maps to container 5432; the bootstrap admin is separate from `banking_user`; initialization runs only on an empty volume. |
+| D8 | 2026-06-29 | Use integer primary keys, named domain enums, and no implicit ORM delete cascades | Phase 5 model design | Integer vs UUID; strings vs enums; cascades vs explicit retention | These choices keep the schema teachable while preserving domain validity and append-only history. | IDs remain enumerable and require strict authorization; enum changes need migrations; future deletions must be explicit. |
 
 ### Debugging Log
 

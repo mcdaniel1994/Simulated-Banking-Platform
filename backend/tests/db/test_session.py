@@ -1,16 +1,10 @@
 import pytest
 from app.db import session as db_session
-from app.db.base import Base
 from pydantic import SecretStr, ValidationError
 from sqlalchemy import Engine, make_url, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from tests.db.conftest import DatabaseTestSettings
-
-
-def test_declarative_base_starts_with_phase4_metadata_only() -> None:
-    # Models belong to Phase 5, so Phase 4 establishes metadata without registering tables early.
-    assert Base.metadata.tables == {}
 
 
 def test_database_configuration_requires_a_test_url(

@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M2 — Database (in progress)
-- Current phase: Phase 4 — SQLAlchemy engine, session, base, and DB dependency (complete)
-- Current task: Review and commit the completed Phase 4 batch
-- Last completed: Phase 4 — SQLAlchemy engine, session, base, and DB dependency
-- Next action: Review and commit Phase 4, then begin Phase 5 separately
+- Current phase: Phase 5 — Database models and relationships (complete)
+- Current task: Review and commit the completed Phase 5 batch
+- Last completed: Phase 5 — Database models and relationships
+- Next action: Review and commit Phase 5, then begin Phase 6 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -146,23 +146,29 @@ Completion evidence:
   only for an empty Compose volume. Alembic remains Phase 6 and was not initialized.
 
 ### Phase 5 — Database models & relationships
-Status: NOT STARTED
-- [ ] User model
-- [ ] Session model (token_hash unique, indexes)
-- [ ] Account model (`CHECK (balance >= 0)`, index)
-- [ ] Transaction model (append-only, index)
-- [ ] Transfer model
-- [ ] AuditEvent model (per D2)
-- [ ] Wire relationships and register on metadata
-- [ ] Add model unit tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] User model
+- [x] Session model (token_hash unique, indexes)
+- [x] Account model (`CHECK (balance >= 0)`, index)
+- [x] Transaction model (append-only, index)
+- [x] Transfer model
+- [x] AuditEvent model (per D2)
+- [x] Wire relationships and register on metadata
+- [x] Add model unit tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `16 passed, 1 existing warning`; Ruff format and lint checks passed.
+- Manual verification: SQLAlchemy mapper configuration completed without relationship errors;
+  `Base.metadata` registered exactly `users`, `sessions`, `accounts`, `transactions`, `transfers`,
+  and `audit_events`, with required columns, named enums, indexes, foreign keys,
+  `NUMERIC(14,2)` money types, timezone-aware timestamps, uniqueness, and the nonnegative-balance
+  check represented in metadata.
 - Commit:
-- Notes:
+- Notes: Integer primary keys were selected because the specification does not require UUIDs.
+  Models deliberately have no implicit delete cascades. No tables or migrations were created;
+  Alembic and live constraint enforcement remain Phase 6.
 
 ### Phase 6 — Alembic configuration & first migration
 Status: NOT STARTED
