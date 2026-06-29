@@ -49,6 +49,11 @@ Run the full backend suite from `backend/`:
 uv run pytest
 ```
 
+Database tests load the ignored root `.env` and require both `DATABASE_URL` and
+`TEST_DATABASE_URL`. The URLs must be different, and the test URL must target the isolated
+`simulated_banking_test` database. Missing or unsafe configuration fails the suite rather than
+skipping database tests or falling back to development.
+
 Later phases may use targeted commands such as:
 
 ```bash
@@ -56,5 +61,5 @@ uv run pytest tests/api/test_auth.py -q
 uv run pytest -k reconciliation -q
 ```
 
-The suite intentionally contains no test cases during Phase 1. The first integration test will be
-added with the health endpoint in Phase 2.
+Phase 4 adds PostgreSQL integration coverage for connectivity, dependency cleanup, rollback, and
+development/test database isolation.

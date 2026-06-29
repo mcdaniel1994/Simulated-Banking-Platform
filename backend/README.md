@@ -58,6 +58,21 @@ cp ../.env.example ../.env
 Replace the placeholder database credentials and session secret in `.env`. The real file is
 git-ignored and must never be committed.
 
+Run PostgreSQL 16 in Docker while keeping FastAPI and Python tooling in the local virtual
+environment:
+
+```bash
+cd ..
+docker compose up -d postgres
+docker compose ps
+cd backend
+```
+
+The Compose project maps local port `5433` to PostgreSQL's container port `5432` and creates
+separate `simulated_banking_dev` and `simulated_banking_test` databases. The initialization SQL
+runs only when the dedicated PostgreSQL volume is empty. The container bootstrap administrator is
+separate from the non-superuser `banking_user` identity used by the application and tests.
+
 Run backend commands from this directory:
 
 ```bash
@@ -67,11 +82,11 @@ uv run ruff check app tests
 uv run pytest
 ```
 
-The test suite is currently empty, so pytest exits with code `5` until the first behavior test is
-added in Phase 2.
+Database tests require `TEST_DATABASE_URL`, reject a URL equal to `DATABASE_URL`, and never fall
+back to the development database.
 
 ## Current State
 
-Phase 1 establishes only the package structure and development tooling. The empty packages are
-intentional. Application behavior will be added one phase at a time according to the implementation
-plan.
+Phase 4 provides the synchronous SQLAlchemy engine, bounded connection pool, session factory,
+declarative metadata base, and request-scoped database dependency. Models and Alembic migrations
+remain intentionally deferred to Phases 5 and 6.

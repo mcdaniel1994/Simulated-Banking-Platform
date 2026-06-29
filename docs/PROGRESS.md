@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M1 — Repo & Backend Foundation (complete)
-- Current phase: Phase 3 — Configuration & environment variables (complete)
-- Current task: D5 resolved — synchronous SQLAlchemy selected
-- Last completed: Phase 3 — Configuration & environment variables
-- Next action: Begin Phase 4 — SQLAlchemy engine, session, base, and DB dependency
+- Current milestone: M2 — Database (in progress)
+- Current phase: Phase 4 — SQLAlchemy engine, session, base, and DB dependency (complete)
+- Current task: Review and commit the completed Phase 4 batch
+- Last completed: Phase 4 — SQLAlchemy engine, session, base, and DB dependency
+- Next action: Review and commit Phase 4, then begin Phase 5 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -21,7 +21,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 |---|---|---|---|---|
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
-| M2 — Database | NOT STARTED |  |  |  |
+| M2 — Database | IN PROGRESS | 2026-06-29 |  | Phase 4 complete |
 | M3 — Authentication & Authorization | NOT STARTED |  |  |  |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
@@ -123,20 +123,27 @@ Completion evidence:
 ## M2 — Database `[SUBMISSION]`
 
 ### Phase 4 — SQLAlchemy engine, session, base, DB dependency
-Status: NOT STARTED
-- [ ] Create the engine from `DATABASE_URL` (sized pool)
-- [ ] Create the `SessionLocal` factory
-- [ ] Declare the `Base` / metadata
-- [ ] Add the `get_db` dependency
-- [ ] Add connectivity check + test
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Create the engine from `DATABASE_URL` (sized pool)
+- [x] Create the `SessionLocal` factory
+- [x] Declare the `Base` / metadata
+- [x] Add the `get_db` dependency
+- [x] Add connectivity check + test
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `12 passed, 1 existing warning`; Ruff format and lint checks passed.
+- Manual verification: Compose configuration validated; PostgreSQL 16 reached healthy status on
+  host port 5433; initialization logs contained no errors; `simulated_banking_dev` and
+  `simulated_banking_test` exist and are owned by non-superuser `banking_user`; the role connected
+  to and created/dropped schema objects in both databases; the runtime engine connected to the
+  development database; database tests used only the isolated test database and proved cleanup
+  plus rollback behavior.
 - Commit:
-- Notes:
+- Notes: PostgreSQL alone runs in Docker; FastAPI remains local. The official image's bootstrap
+  administrator is separate from the least-privilege application role. Initialization SQL runs
+  only for an empty Compose volume. Alembic remains Phase 6 and was not initialized.
 
 ### Phase 5 — Database models & relationships
 Status: NOT STARTED

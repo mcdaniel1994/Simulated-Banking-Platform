@@ -463,6 +463,140 @@ design rather than catching the database URL during the security review.
 Commit Phase 3, then resolve D5 before Phase 4 so the SQLAlchemy engine and session design use one
 deliberate sync or async approach.
 
+### Entry — 2026-06-29 — Phase 4: SQLAlchemy Engine, Session, Base, and DB Dependency
+
+#### What I Worked On
+
+I added a PostgreSQL 16 service for local development with Docker Compose while keeping FastAPI in
+the local Python environment. I created separate development and test databases, a dedicated
+least-privilege application role, synchronous SQLAlchemy engine/session infrastructure, a shared
+declarative base, and a request-scoped FastAPI database dependency.
+
+#### What I Expected to Happen
+
+I expected Docker Compose to create an isolated PostgreSQL server on host port 5433, initialize
+both databases in a dedicated volume, and let the application connect through a bounded SQLAlchemy
+pool. I expected database tests to fail rather than risk using the development database when test
+configuration was missing or unsafe.
+
+#### What Actually Happened
+
+The PostgreSQL service reached healthy status, both databases were initialized and owned by
+`banking_user`, and that role could create schema objects without having superuser or role/database
+creation privileges. The runtime engine connected to `simulated_banking_dev`; the database suite
+connected only to `simulated_banking_test` and proved session cleanup and transaction rollback.
+
+The full suite passed with 12 tests and the existing FastAPI TestClient warning. Ruff formatting
+and linting also passed.
+
+#### Concepts I Learned
+
+- A SQLAlchemy engine owns the connection pool, while each `Session` represents one unit of work.
+- A FastAPI yield dependency can guarantee rollback on request errors and close the session in a
+  `finally` block.
+- Test database configuration should be test-only and must not silently inherit the development
+  database.
+- Docker entrypoint initialization runs only when the PostgreSQL data directory is empty.
+- The official PostgreSQL image treats `POSTGRES_USER` as a bootstrap superuser, so an application
+  role must be created separately to achieve least privilege.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Local PostgreSQL | Homebrew service; Docker Compose | PostgreSQL 16 in Docker Compose | It isolates this project from other local PostgreSQL installations and gives development and test databases a reproducible setup. | Docker Desktop must be running. |
+| Runtime placement | Containerize API and DB; containerize only DB | PostgreSQL only in Docker | Phase 4 needs database infrastructure, while backend containerization belongs to Phase 36. | The local backend connects through mapped port 5433. |
+| Database identities | Application role as image bootstrap user; separate admin and application roles | Separate container bootstrap administrator and non-superuser `banking_user` | The official image makes `POSTGRES_USER` a superuser, which violates the application-role requirement. | Local `.env` contains two independent generated passwords. |
+| Test configuration | Add `TEST_DATABASE_URL` to runtime settings; test-only settings | Test-only `DatabaseTestSettings` | Production code should not require or know about a test database. | Database tests have a dedicated configuration fixture. |
+| Session failure handling | Close only; rollback then close | Rollback on error, always close | Failed request work must not return an active transaction to the pool. | Services still need to own intentional commit boundaries. |
+
+#### Problems I Encountered
+
+- The requested `POSTGRES_USER=banking_user` setup made `banking_user` the PostgreSQL bootstrap
+  superuser.
+- PostgreSQL does not allow its bootstrap identity to remove its own superuser attribute.
+- Ruff identified two new files that needed mechanical formatting.
+
+#### How I Diagnosed Them
+
+- I queried `pg_roles` and found `banking_user` had superuser, database-creation, role-creation, and
+  replication privileges.
+- I attempted to narrow the role and read PostgreSQL's explicit bootstrap-user error.
+- I used Ruff's non-writing format check before applying its formatter.
+
+#### How I Solved Them
+
+- I separated the container bootstrap administrator from the application identity.
+- The initialization SQL reads the application credentials from container environment variables,
+  creates non-superuser `banking_user`, and transfers ownership of both databases to it.
+- I reset only the newly created banking Compose volume so the corrected initialization could run
+  against an empty data directory. Agent OS resources were not modified.
+- I applied Ruff's formatter to the two reported files.
+
+#### Tests I Added
+
+- Declarative metadata exists without registering Phase 5 models early.
+- Missing `TEST_DATABASE_URL` fails.
+- A test URL equal to the development URL fails.
+- Development and test URLs target the expected separate databases with Psycopg 3.
+- `get_db` executes `SELECT 1` against `simulated_banking_test` and releases the connection.
+- An exception sent through `get_db` rolls back transactional PostgreSQL DDL and closes the session.
+
+Result: `12 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+docker compose config -q
+docker compose up -d postgres
+docker compose ps
+docker compose logs postgres
+docker compose exec postgres psql ...
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest -q
+```
+
+#### Files I Changed
+
+- `compose.yaml`
+- `docker/postgres/init/01-create-test-database.sql`
+- `.env.example`
+- Local ignored `.env`
+- `backend/app/db/base.py`
+- `backend/app/db/session.py`
+- `backend/tests/db/conftest.py`
+- `backend/tests/db/test_session.py`
+- `backend/README.md`
+- `backend/tests/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Generated local credentials are stored only in the ignored `.env` with owner-only permissions.
+- Runtime and tests authenticate as a non-superuser that owns only the two banking databases.
+- Development and test URLs must differ; missing test configuration is a hard failure.
+- The engine uses a bounded pool with pre-ping, and the request dependency rolls back errors and
+  always closes sessions.
+- The Compose project has its own volume and default network. Agent OS resources were untouched.
+
+#### What I Would Do Differently
+
+I would separate the image bootstrap identity from the application identity in the first Compose
+draft because the official image intentionally grants `POSTGRES_USER` superuser privileges.
+
+#### Questions I Still Have
+
+- Should future production pool sizing differ from the local pool after the Supabase pooler limits
+  are known?
+
+#### Next Step
+
+Review and commit Phase 4. Stop before Phase 5 so ORM models and relationships remain a separate
+phase. Alembic initialization remains deferred to Phase 6.
+
 ---
 
 ## Long-Term Logs
@@ -480,6 +614,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D4 | 2026-06-29 | Use lightweight query helpers with services as the primary business-logic layer | SPEC §24.6; service file layout | Lightweight helpers (rec); full per-entity repo | I chose lightweight helpers because a full repository per entity would add unnecessary abstraction and make the banking rules harder to follow while I am learning the system. | I will keep business rules and transaction boundaries in services and add small query helpers only when a query is reused or complex enough to justify one. |
 | D5 | 2026-06-29 | Use synchronous SQLAlchemy sessions and database operations | SPEC §17; row locking for money path | Sync (rec, simpler `FOR UPDATE`); async | I chose synchronous SQLAlchemy because it keeps transaction boundaries, row locking, rollback behavior, and tests easier to follow without adding async complexity that the current requirements do not need. | Routes that perform blocking database work will use normal synchronous dependencies and services; the design favors clarity over the additional I/O concurrency available from an async stack. |
 | D6 | 2026-06-29 | Use uv for Python environment and dependency management | IMPLEMENTATION_PLAN Phase 1; backend tooling and dependency workflow | uv; pip + `requirements.txt`; Poetry | I chose uv because it is already installed, uses the standard `pyproject.toml` format, and provides fast installs with a reproducible lockfile without the extra workflow complexity of Poetry. | I will manage the backend environment and dependencies with uv, commit `pyproject.toml` and `uv.lock`, and run Python tools through `uv run`. |
+| D7 | 2026-06-29 | Run PostgreSQL 16 in Docker Compose with separate dev/test databases and a non-superuser app role | Phase 4 local database isolation | Homebrew PostgreSQL; Docker Compose | Compose gives the banking project a dedicated volume/network while explicit test URL checks protect development data. | FastAPI stays local; host 5433 maps to container 5432; the bootstrap admin is separate from `banking_user`; initialization runs only on an empty volume. |
 
 ### Debugging Log
 
