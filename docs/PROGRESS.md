@@ -638,7 +638,7 @@ Status: COMPLETE
 - [x] Swagger/curl walkthrough as customer and admin
 - [x] Add redaction test
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 - [x] **CHECKPOINT:** backend suite green + walkthrough succeeds before any frontend work
 
 Completion evidence:
@@ -648,7 +648,7 @@ Completion evidence:
   paths as customer and admin: login/current user, accounts, both history feeds, deposit,
   withdrawal, transfer/detail, logout/revoked reuse, dashboard, customer list/detail, status
   controls, customer/admin denials, CSRF rejection, reconciliation, and all required audit events.
-- Commit:
+- Commit: `9749182 test(backend): finalize error consistency, redaction, and audit coverage`
 - Notes: All 11 SPEC §10 MVP audit event types are wired, including permission denial. Safe stdout
   logs include only event names and numeric identifiers; redaction tests exclude passwords, raw
   cookies, account numbers, sensitive header names, SQL, tokens, and exception details. The one
