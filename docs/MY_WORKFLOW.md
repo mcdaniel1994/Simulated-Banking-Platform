@@ -2311,6 +2311,70 @@ when new transactions arrive. Limit/offset is the explicit MVP contract and is s
 Review and commit Phase 19. Stop before Phase 20 so the first money mutation, locking, CSRF, and
 audit behavior remain a separate bounded phase.
 
+### Entry — 2026-06-29 — Phase 20: Atomic Deposit
+
+#### What I Worked On
+
+I added the first money mutation: a CSRF-protected deposit route, exact decimal-string validation,
+and a service that re-loads the owned account under `SELECT ... FOR UPDATE`. Balance, the DEPOSIT
+history row with `balance_after`, and the D2 audit event commit together.
+
+#### What I Expected to Happen
+
+Valid deposits should increase an ACTIVE owned account exactly once. Invalid precision, floats,
+non-positive values, inactive accounts, and missing CSRF should produce the common error envelope
+without balance, history, or audit writes.
+
+#### What Actually Happened
+
+Nine focused tests and all 88 backend tests passed. Real Uvicorn verification rejected missing
+CSRF, accepted the matching pair, increased the balance by `1.00`, and persisted matching
+transaction and audit rows. Ruff and Alembic checks passed.
+
+#### Concepts I Learned
+
+- Authorization and locking are separate responsibilities: the route dependency proves access,
+  while the service re-queries under a row lock for mutation.
+- Exact money input starts as a string and becomes `Decimal`; JSON floats are rejected.
+- Balance, append-only history, and audit evidence belong to one database transaction.
+
+#### Decisions I Made
+
+| Decision | Choice | Reason | Consequence |
+|---|---|---|---|
+| Money input | Required decimal string, max 14 digits/2 decimals | Prevent binary floats and match `NUMERIC(14,2)` | Invalid precision and numeric JSON return 422 |
+| Result limit | Reject balances above `999999999999.99` | Avoid database overflow becoming an internal error | Service returns field-specific validation |
+| Lock point | Re-query owned account with `FOR UPDATE` | The balance must be read only after the lock is held | One extra authorized lookup occurs |
+
+#### Tests I Added
+
+- Atomic balance, DEPOSIT history, `balance_after`, and audit persistence.
+- Invalid amount, precision, maximum, and JSON-float rejection.
+- FROZEN/CLOSED rejection with no writes.
+- Missing CSRF rejection before mutation.
+
+Result: `88 passed, 1 existing warning`.
+
+#### Files I Changed
+
+- `backend/app/schemas/money.py`
+- `backend/app/services/money_service.py`
+- `backend/app/api/routes/money.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_deposit.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- The lock, balance update, history row, and audit row share one transaction.
+- Ownership is filtered again in the locking query.
+- Account numbers and credentials never enter audit metadata.
+
+#### Next Step
+
+Commit Phase 20 and implement Phase 21 withdrawal separately.
+
 ---
 
 ## Long-Term Logs
@@ -2344,6 +2408,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D20 | 2026-06-29 | Centralize typed domain errors and catch unexpected failures before server traceback logging | Phase 17 error boundary | Route-local responses; per-error handlers; outer exception handler; application middleware | One domain handler keeps contracts stable, while middleware prevents Uvicorn from logging raw secret-bearing exception messages. | Validation fields are sanitized; internal logs retain only exception type, method, and path until structured logging hardening. |
 | D21 | 2026-06-29 | Publish account balances as two-decimal strings converted directly from `Decimal` | Phase 18 account reads | JSON number; serialized Decimal; schema-level string | A string contract is exact across JSON and JavaScript, and the schema advertises the representation clearly. | Frontend aggregation must use decimal-safe parsing; `user_id` remains omitted from customer responses. |
 | D22 | 2026-06-29 | Use limit/offset pagination with default 20, maximum 100, and newest-first stable ordering | Phase 19 transaction history | Different page sizes; silent clamp; oldest/account-grouped/newest order | Bounded explicit validation limits work; `created_at DESC, id DESC` gives a useful feed and stable timestamp ties. | Invalid bounds return 422; offset pages can shift under concurrent inserts, so cursor pagination remains a future production option. |
+| D23 | 2026-06-29 | Require decimal-string money input and re-lock owned accounts inside mutation services | Phase 20 deposit | JSON number vs string; mutate dependency row vs locked re-query | Exact strings prevent float drift; the locked query makes the balance read concurrency-safe. | Money requests reject floats and excess precision; mutations perform a second ownership-filtered lookup. |
 
 ### Debugging Log
 

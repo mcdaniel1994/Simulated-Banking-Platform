@@ -5,6 +5,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.routes.accounts import router as accounts_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
+from app.api.routes.money import router as money_router
 from app.api.routes.transactions import router as transactions_router
 from app.errors import (
     DomainError,
@@ -37,3 +38,6 @@ app.include_router(accounts_router, prefix="/api")
 
 # Transaction history shares the same customer and account ownership boundaries.
 app.include_router(transactions_router, prefix="/api")
+
+# Money mutations add explicit CSRF and locked service-layer transaction boundaries.
+app.include_router(money_router, prefix="/api")
