@@ -204,7 +204,7 @@ Status: COMPLETE
 - [x] Print demo credentials
 - [x] Add idempotency + reconciliation tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `25 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
@@ -212,7 +212,7 @@ Completion evidence:
 - Manual verification: The development seed ran twice with stable counts of 3 users, 4 accounts,
   2 transfers, and 12 transactions; every account's signed transaction sum equaled its stored
   balance; each transfer had exactly two distinct transaction legs linked by `reference_id`.
-- Commit:
+- Commit: `4402852 feat(seed): add deterministic idempotent demo-data seed`
 - Notes: Demo identities use synthetic `.test` addresses and intentionally public credentials.
   Passwords are stored only as Argon2id hashes. Existing account pairs preserve later append-only
   activity on rerun rather than deleting history. M2 is complete.
