@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M2 — Database (complete); M3 in progress
-- Current phase: Phase 7 — Deterministic, idempotent seed (complete)
-- Current task: Review and commit the completed Phase 7 batch
-- Last completed: Phase 7 — Deterministic, idempotent seed
-- Next action: Review and commit Phase 7, then begin Phase 9 separately
+- Current milestone: M3 — Authentication & Authorization (in progress)
+- Current phase: Phase 9 — Session-token utility (complete)
+- Current task: Review and commit the completed Phase 9 batch
+- Last completed: Phase 9 — Session-token utility
+- Next action: Review and commit Phase 9, then begin Phase 10 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phase 8 completed early as a Phase 7 dependency |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–9 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -242,20 +242,25 @@ Completion evidence:
   authentication failures. Session-token work remains Phase 9 and was not started.
 
 ### Phase 9 — Session-token utility (hash-only storage)
-Status: NOT STARTED
-- [ ] `generate_session_token` (high entropy)
-- [ ] `hash_session_token` (deterministic, optionally peppered)
-- [ ] expiry helper from D1 lifetimes
-- [ ] Confirm raw token never persisted
-- [ ] Add unit tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] `generate_session_token` (high entropy)
+- [x] `hash_session_token` (deterministic, optionally peppered)
+- [x] expiry helper from D1 lifetimes
+- [x] Confirm raw token never persisted
+- [x] Add unit tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `30 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
+  reported no model/schema drift.
+- Manual verification: Generated tokens contained 43 URL-safe characters from 32 random bytes;
+  repeated generation was unique; HMAC-SHA256 produced a deterministic 64-character lookup hash
+  without the raw token; D1 expiry calculated exactly 12 hours from an aware UTC timestamp.
 - Commit:
-- Notes:
+- Notes: Session-token hashes are keyed with `SESSION_SECRET`; rotating that secret intentionally
+  invalidates all active sessions. Naive timestamps are rejected. No token or hash is logged or
+  persisted by the utility itself. Phase 10 was not started.
 
 ### Phase 10 — Login endpoint + cookie issuance
 Status: NOT STARTED

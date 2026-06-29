@@ -1062,6 +1062,112 @@ implementation sequence matches the dependency graph without crossing milestone 
 Review and commit Phase 7. M2 is then complete; continue M3 with Phase 9 only after this seed batch
 is committed. Do not begin session-token work in this phase.
 
+### Entry — 2026-06-29 — Phase 9: Session-Token Utility
+
+#### What I Worked On
+
+I added the security primitives needed to issue opaque server-side sessions: high-entropy token
+generation, keyed deterministic hashing for indexed database lookup, and absolute-expiry
+calculation from the configured D1 lifetime.
+
+#### What I Expected to Happen
+
+I expected tokens to be URL-safe and unique, hashes to be deterministic only under the same
+session secret, and expiration to resolve exactly from a timezone-aware creation timestamp.
+
+#### What Actually Happened
+
+Each generated token encoded 32 random bytes into 43 URL-safe characters. HMAC-SHA256 produced a
+64-character lookup value, the same token hashed consistently under one secret, and rotating the
+secret changed the hash. Expiry resolved to exactly 12 hours under the real D1 configuration.
+
+The full suite passed with 30 tests and only the existing FastAPI TestClient warning. Ruff passed,
+and Alembic reported no model/schema drift.
+
+#### Concepts I Learned
+
+- Opaque session tokens need cryptographic randomness because possession of the raw value grants
+  authentication.
+- Session tokens are already high entropy, so a fast deterministic hash supports indexed lookup;
+  password hashes require a deliberately slow algorithm for a different threat model.
+- HMAC adds a server-held pepper, limiting what a sessions-table leak reveals by itself.
+- Rotating the HMAC key invalidates every existing session because their lookup hashes change.
+- Timezone-aware timestamps prevent local-time ambiguity in absolute-expiry comparisons.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Token entropy | 16, 24, or 32 random bytes | 32 bytes (256 bits) | It provides ample entropy with a cookie-friendly 43-character encoding. | Tokens are slightly longer than a minimal design. |
+| Lookup hash | Plain SHA-256; concatenated pepper; HMAC-SHA256 | HMAC-SHA256 keyed by `SESSION_SECRET` | HMAC is the standard keyed construction and keeps database-only compromise from reproducing hashes. | Secret rotation revokes all sessions. |
+| Expiry timestamp | Accept naive/aware values; require aware values | Require timezone-aware input and normalize to UTC | Security expiry logic should never guess a timezone. | Callers must construct correct aware timestamps. |
+
+#### Problems I Encountered
+
+- Ruff requested import grouping after the security test module gained new standard-library,
+  application, and third-party imports.
+
+#### How I Diagnosed Them
+
+- Ruff identified the exact import block; all targeted behavior tests already passed.
+
+#### How I Solved Them
+
+- I applied Ruff's safe import correction and reran formatting, linting, the full suite, and the
+  Alembic drift check.
+
+#### Tests I Added
+
+- Generate 100 unique URL-safe tokens with the expected entropy-derived length.
+- Verify deterministic, fixed-length hashing and different-token separation.
+- Verify changing `SESSION_SECRET` changes the lookup hash.
+- Verify configured absolute expiry from an aware timestamp.
+- Reject naive timestamps.
+- Assert helper calls emit neither raw tokens nor their hashes to logs.
+
+Result: `30 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest tests/unit/test_security.py -q
+uv run pytest -q
+uv run alembic check
+```
+
+#### Files I Changed
+
+- `backend/app/core/security.py`
+- `backend/tests/unit/test_security.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Raw tokens are returned only to the future cookie-issuance layer and never persisted here.
+- Stored lookup values are HMAC-SHA256 hex digests compatible with the model's 64-character column.
+- Session secrets are accessed through `SecretStr` and never logged.
+- Key rotation provides an emergency global session-revocation mechanism.
+- Expiry calculation rejects ambiguous timestamps.
+
+#### What I Would Do Differently
+
+I would record the global-session-revocation consequence of secret rotation alongside the original
+configuration decision, because it is an operational behavior as well as a cryptographic choice.
+
+#### Questions I Still Have
+
+- Phase 10 must finalize cookie names, paths, and `Max-Age` behavior while preserving the spec's
+  `__Host-` prefix requirement where possible.
+
+#### Next Step
+
+Review and commit Phase 9. Stop before Phase 10 so database session creation, cookie issuance, CSRF
+cookie generation, and audit writes remain one separately reviewed login phase.
+
 ---
 
 ## Long-Term Logs
@@ -1084,6 +1190,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D9 | 2026-06-29 | Resolve Alembic runtime URLs from settings and inject test URLs explicitly | Phase 6 migration safety | URL in config; process env override; Alembic config attribute | Credentials remain outside source control and migration tests cannot silently target development. | CLI commands require application settings; tests construct a dedicated Alembic config for the isolated database. |
 | D10 | 2026-06-29 | Complete Phase 8 password hashing before Phase 7 seed data | Phase 7 requires Argon2id-hashed demo credentials | Hash inline and refactor; sequence Phase 8 first | Reusing one tested security primitive avoids temporary duplicate credential code. | M3 begins before M2 closes; after the Phase 8 commit, work returns to Phase 7 before Phase 9. |
 | D11 | 2026-06-29 | Seed fixed synthetic users and varied reconciliation-safe history without deleting existing account activity | Phase 7 demo data | Minimal opening balances; delete/rebuild; create-once history | Stable natural keys and create-once history make reruns safe while preserving append-only transactions. | Public `.test` credentials are fixed; partial account-pair drift fails; full pre-submission reset would require an explicit destructive workflow. |
+| D12 | 2026-06-29 | Generate 256-bit opaque tokens and store HMAC-SHA256 lookup hashes keyed by `SESSION_SECRET` | Phase 9 token storage | Plain SHA-256; concatenated pepper; HMAC-SHA256 | HMAC is a standard deterministic keyed construction that supports indexed lookup while limiting database-only compromise. | Raw tokens stay cookie-only; hashes are 64 hex characters; rotating `SESSION_SECRET` invalidates all sessions. |
 
 ### Debugging Log
 
