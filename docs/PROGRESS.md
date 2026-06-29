@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M3 — Authentication & Authorization (in progress)
-- Current phase: Phase 9 — Session-token utility (complete)
-- Current task: Review and commit the completed Phase 9 batch
-- Last completed: Phase 9 — Session-token utility
-- Next action: Review and commit Phase 9, then begin Phase 10 separately
+- Current phase: Phase 10 — Login endpoint and cookie issuance (complete)
+- Current task: Review and commit the completed Phase 10 batch
+- Last completed: Phase 10 — Login endpoint and cookie issuance
+- Next action: Review and commit Phase 10, then begin Phase 11 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–9 complete |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–10 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -249,7 +249,7 @@ Status: COMPLETE
 - [x] Confirm raw token never persisted
 - [x] Add unit tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `30 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
@@ -257,28 +257,35 @@ Completion evidence:
 - Manual verification: Generated tokens contained 43 URL-safe characters from 32 random bytes;
   repeated generation was unique; HMAC-SHA256 produced a deterministic 64-character lookup hash
   without the raw token; D1 expiry calculated exactly 12 hours from an aware UTC timestamp.
-- Commit:
+- Commit: `4d0d8b8 feat(security): add opaque session token generation and hashing`
 - Notes: Session-token hashes are keyed with `SESSION_SECRET`; rotating that secret intentionally
   invalidates all active sessions. Naive timestamps are rejected. No token or hash is logged or
   persisted by the utility itself. Phase 10 was not started.
 
 ### Phase 10 — Login endpoint + cookie issuance
-Status: NOT STARTED
-- [ ] Login request schema
-- [ ] Verify password; reject inactive users
-- [ ] Create session row (store token hash)
-- [ ] Set auth cookie (secure attributes) + CSRF cookie
-- [ ] Generic 401 on failure (no enumeration)
-- [ ] Emit login success/failure audit rows (D2)
-- [ ] Add API tests (session row + cookie attributes)
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Login request schema
+- [x] Verify password; reject inactive users
+- [x] Create session row (store token hash)
+- [x] Set auth cookie (secure attributes) + CSRF cookie
+- [x] Generic 401 on failure (no enumeration)
+- [x] Emit login success/failure audit rows (D2)
+- [x] Add API tests (session row + cookie attributes)
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `34 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
+  reported no model/schema drift.
+- Manual verification: Real Uvicorn login returned HTTP 200 and set a redacted
+  `__Host-session` cookie with `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, and
+  `Max-Age=43200`; the separate CSRF cookie was readable and otherwise identically scoped.
+  PostgreSQL stored one 64-character token hash with a 12-hour lifetime and a `login_success`
+  audit event.
 - Commit:
-- Notes:
+- Notes: Unknown email, wrong password, and inactive user return the same 401 envelope. Unknown
+  users still incur Argon2 verification to reduce timing clues. Login establishes the session and
+  issues the CSRF cookie; Phase 13 will enforce double-submit CSRF on subsequent mutations.
 
 ### Phase 11 — Current-session / current-user dependency
 Status: NOT STARTED

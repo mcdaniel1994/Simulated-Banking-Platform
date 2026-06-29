@@ -6,7 +6,7 @@ from alembic.config import Config
 from sqlalchemy import Engine, inspect, text
 from sqlalchemy.exc import IntegrityError
 
-from tests.db.conftest import DatabaseTestSettings
+from tests.conftest import DatabaseTestSettings
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 APPLICATION_TABLES = {

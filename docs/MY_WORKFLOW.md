@@ -1168,6 +1168,130 @@ configuration decision, because it is an operational behavior as well as a crypt
 Review and commit Phase 9. Stop before Phase 10 so database session creation, cookie issuance, CSRF
 cookie generation, and audit writes remain one separately reviewed login phase.
 
+### Entry — 2026-06-29 — Phase 10: Login Endpoint and Cookie Issuance
+
+#### What I Worked On
+
+I implemented the first authenticated HTTP flow. The login schema normalizes credentials, the
+service verifies passwords and creates server-side sessions plus audit rows, and the route issues
+the secure auth/CSRF cookie pair without returning raw authentication material in the response.
+
+#### What I Expected to Happen
+
+I expected seeded credentials to create one hashed session row, unknown/wrong/inactive users to
+receive an identical generic failure, outdated password parameters to rehash on successful login,
+and both cookies to carry the required security attributes.
+
+#### What Actually Happened
+
+Targeted API tests verified successful login, hash-only persistence, success/failure audits,
+enumeration-safe errors, inactive-user blocking, and rehash-on-login. A real Uvicorn request
+returned HTTP 200 and set a redacted `__Host-session` cookie with
+`HttpOnly/Secure/SameSite=Strict/Path=/` and a 12-hour Max-Age. The readable CSRF cookie used the
+same secure scope without `HttpOnly`.
+
+PostgreSQL contained only the 64-character lookup hash with a 12-hour lifetime. The complete suite
+passed with 34 tests and the existing FastAPI TestClient warning; Alembic found no drift.
+
+#### Concepts I Learned
+
+- Authentication belongs in a service transaction; cookie construction belongs in the HTTP route.
+- A dummy password hash reduces obvious timing differences between unknown-email and wrong-password
+  paths.
+- `__Host-` cookies require `Secure`, `Path=/`, and no `Domain` attribute.
+- The CSRF token must be readable by JavaScript but independent from the HttpOnly session token.
+- Successful login can safely upgrade old Argon2 parameters because the plaintext is present only
+  during verified authentication.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Unknown-user verification | Return immediately; verify a dummy Argon2 hash | Dummy verification | It narrows timing differences that could reveal registered email addresses. | Unknown logins consume intentional password-hash work. |
+| Auth cookie name | Always `session`; always `__Host-session`; conditional | `__Host-session` without Domain, `session` with Domain | It uses the strongest prefix whenever technically valid. | Current-session lookup must use the same helper. |
+| Login response | Return user/session data; minimal status | `{"status":"authenticated"}` | Raw tokens stay cookie-only and `/auth/me` will become the user source in Phase 11. | The client needs the next request to load user details. |
+| Failure handling | FastAPI `detail`; common envelope shape | Generic `UNAUTHENTICATED` envelope | It prevents enumeration and already matches the future API contract. | Phase 17 still needs to centralize exception mapping. |
+| Login CSRF | Require pre-session token; issue token at login | Login establishes the CSRF cookie; later mutations require it | The selected double-submit design has no session token before login. | SameSite remains the login request's current CSRF defense. |
+
+#### Problems I Encountered
+
+- Ruff rejected a direct `Depends(get_db)` call in the function default.
+- Database fixtures under `tests/db/conftest.py` were not visible to API tests.
+- The generated API test needed mechanical formatting.
+
+#### How I Diagnosed Them
+
+- Ruff identified the dependency-default rule and recommended a non-call default pattern.
+- Pytest listed available fixtures and showed the database fixtures were scoped only below
+  `tests/db/`.
+- Targeted tests isolated fixture collection before exercising login behavior.
+
+#### How I Solved Them
+
+- I switched the route dependency to `Annotated[DatabaseSession, Depends(get_db)]`.
+- I promoted shared database configuration/engine/session fixtures to `tests/conftest.py` and
+  updated existing database-test imports.
+- I applied Ruff's formatter and reran targeted and full gates.
+
+#### Tests I Added
+
+- Successful login creates one hash-only session row and a success audit.
+- Auth and CSRF cookies have the required attributes and independent values.
+- Unknown email and wrong password produce identical generic 401 bodies and no session.
+- Inactive users receive the same generic failure.
+- Login upgrades a valid password hash with weaker Argon2 parameters.
+
+Result: `34 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run pytest tests/api/test_auth.py -q
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+#### Files I Changed
+
+- `backend/app/core/security.py`
+- `backend/app/schemas/auth.py`
+- `backend/app/services/auth_service.py`
+- `backend/app/api/routes/auth.py`
+- `backend/app/main.py`
+- `backend/tests/conftest.py`
+- `backend/tests/api/test_auth.py`
+- Existing database tests updated to import shared fixtures
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- The raw session token exists only in the HttpOnly cookie; SQL and audits receive no raw value.
+- Login failure messages are identical for unknown, wrong-password, and inactive-user cases.
+- Passwords and hashes are absent from responses and audit metadata.
+- Session creation, password rehashing, and success audit commit atomically.
+- Failed logins write only sanitized audit metadata.
+- Secure cookie attributes are asserted from actual `Set-Cookie` headers.
+
+#### What I Would Do Differently
+
+I would place shared database fixtures at `tests/conftest.py` when Phase 4 first introduced them,
+because later API and service suites naturally need the same isolation boundary.
+
+#### Questions I Still Have
+
+- Phase 11 must decide exactly when to update `last_used_at` to avoid a database write on every
+  authenticated request while still enforcing the 30-minute idle timeout.
+
+#### Next Step
+
+Review and commit Phase 10. Stop before Phase 11 so session resolution, expiry/revocation checks,
+sliding idle activity, and `/auth/me` remain one separate phase.
+
 ---
 
 ## Long-Term Logs
@@ -1191,6 +1315,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D10 | 2026-06-29 | Complete Phase 8 password hashing before Phase 7 seed data | Phase 7 requires Argon2id-hashed demo credentials | Hash inline and refactor; sequence Phase 8 first | Reusing one tested security primitive avoids temporary duplicate credential code. | M3 begins before M2 closes; after the Phase 8 commit, work returns to Phase 7 before Phase 9. |
 | D11 | 2026-06-29 | Seed fixed synthetic users and varied reconciliation-safe history without deleting existing account activity | Phase 7 demo data | Minimal opening balances; delete/rebuild; create-once history | Stable natural keys and create-once history make reruns safe while preserving append-only transactions. | Public `.test` credentials are fixed; partial account-pair drift fails; full pre-submission reset would require an explicit destructive workflow. |
 | D12 | 2026-06-29 | Generate 256-bit opaque tokens and store HMAC-SHA256 lookup hashes keyed by `SESSION_SECRET` | Phase 9 token storage | Plain SHA-256; concatenated pepper; HMAC-SHA256 | HMAC is a standard deterministic keyed construction that supports indexed lookup while limiting database-only compromise. | Raw tokens stay cookie-only; hashes are 64 hex characters; rotating `SESSION_SECRET` invalidates all sessions. |
+| D13 | 2026-06-29 | Use enumeration-resistant login, host-prefixed auth cookies, and minimal cookie-only session output | Phase 10 login composition | Early unknown-user return; generic timing; normal vs host cookie; return user vs status | Dummy Argon2 work, generic envelopes, and `__Host-session` strengthen the first auth boundary without exposing raw tokens. | Domain cookies fall back to `session`; `/auth/me` supplies user state later; Phase 17 centralizes the envelope. |
 
 ### Debugging Log
 

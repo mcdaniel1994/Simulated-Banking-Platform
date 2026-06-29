@@ -20,6 +20,12 @@ _password_hasher = PasswordHasher(
 
 # Thirty-two random bytes provide 256 bits of entropy before URL-safe encoding.
 SESSION_TOKEN_BYTES = 32
+# The CSRF value is independent so exposing it to JavaScript never reveals the auth credential.
+CSRF_TOKEN_BYTES = 32
+
+# Domain-scoped cookies cannot use the stricter __Host- prefix defined by browser standards.
+HOST_SESSION_COOKIE_NAME = "__Host-session"
+DOMAIN_SESSION_COOKIE_NAME = "session"
 
 
 def hash_password(plain_password: str) -> str:
@@ -49,7 +55,21 @@ def needs_rehash(password_hash: str) -> bool:
 def generate_session_token() -> str:
     """Create a high-entropy opaque value safe for transport in an authentication cookie."""
 
+    # Only the future HTTP layer receives this raw value; persistence receives hash_session_token().
     return secrets.token_urlsafe(SESSION_TOKEN_BYTES)
+
+
+def generate_csrf_token() -> str:
+    """Create the readable random value used by the future double-submit CSRF check."""
+
+    # This token may be read by the SPA, so it must never be reused as the authentication token.
+    return secrets.token_urlsafe(CSRF_TOKEN_BYTES)
+
+
+def get_session_cookie_name(cookie_domain: str | None) -> str:
+    """Use the hardened __Host- prefix only when no Domain attribute will be set."""
+
+    return HOST_SESSION_COOKIE_NAME if cookie_domain is None else DOMAIN_SESSION_COOKIE_NAME
 
 
 def hash_session_token(token: str) -> str:

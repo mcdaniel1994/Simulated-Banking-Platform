@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 class DatabaseTestSettings(BaseSettings):
     """Test-only database configuration that cannot fall back to the development database."""
 
+    # Shared API, service, and DB tests all load the same ignored root environment file.
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -23,6 +24,7 @@ class DatabaseTestSettings(BaseSettings):
 
     @model_validator(mode="after")
     def require_isolated_test_database(self) -> "DatabaseTestSettings":
+        # Equality is a hard failure because mutation tests truncate and rebuild their target.
         if self.test_database_url.get_secret_value() == self.database_url.get_secret_value():
             raise ValueError("TEST_DATABASE_URL must differ from DATABASE_URL")
         return self
@@ -36,6 +38,7 @@ def database_test_settings() -> DatabaseTestSettings:
 
 @pytest.fixture(scope="session")
 def test_engine(database_test_settings: DatabaseTestSettings) -> Generator[Engine, None, None]:
+    # One shared pool keeps integration tests fast while every test controls its own data lifecycle.
     engine = create_engine(
         database_test_settings.test_database_url.get_secret_value(),
         pool_pre_ping=True,
@@ -48,6 +51,8 @@ def test_engine(database_test_settings: DatabaseTestSettings) -> Generator[Engin
 
 @pytest.fixture
 def test_session_factory(test_engine: Engine) -> sessionmaker[Session]:
+    """Create isolated ORM sessions bound only to the validated test engine."""
+
     return sessionmaker(
         bind=test_engine,
         class_=Session,

@@ -19,7 +19,7 @@ from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session as DatabaseSession
 from sqlalchemy.orm import sessionmaker
 
-from tests.db.conftest import DatabaseTestSettings
+from tests.conftest import DatabaseTestSettings
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 

@@ -4,7 +4,7 @@ from pydantic import SecretStr, ValidationError
 from sqlalchemy import Engine, make_url, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from tests.db.conftest import DatabaseTestSettings
+from tests.conftest import DatabaseTestSettings
 
 
 def test_database_configuration_requires_a_test_url(
