@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session as DatabaseSession
 
-from app.api.deps import CurrentPrincipal, CurrentUser
+from app.api.deps import CsrfProtected, CurrentPrincipal, CurrentUser
 from app.core.config import get_settings
 from app.core.security import generate_csrf_token, get_session_cookie_name
 from app.db.session import get_db
@@ -97,6 +97,7 @@ def current_user_route(user: CurrentUser) -> CurrentUserResponse:
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout_route(
     response: Response,
+    _csrf: CsrfProtected,
     principal: CurrentPrincipal,
     db: Annotated[DatabaseSession, Depends(get_db)],
 ) -> None:

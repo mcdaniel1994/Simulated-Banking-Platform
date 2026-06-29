@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from hmac import compare_digest
 from typing import Annotated
 
 from fastapi import Depends, Request, status
@@ -21,9 +22,23 @@ UNAUTHENTICATED_ERROR = {
     }
 }
 
+CSRF_INVALID_ERROR = {
+    "error": {
+        "code": "CSRF_INVALID",
+        "message": "Invalid CSRF token",
+        "fields": {},
+    }
+}
+
+SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
 
 class UnauthenticatedError(Exception):
     """Internal signal for every invalid server-side session state."""
+
+
+class CsrfInvalidError(Exception):
+    """Internal signal for a missing or mismatched double-submit token."""
 
 
 @dataclass(frozen=True)
@@ -44,6 +59,38 @@ async def unauthenticated_exception_handler(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content=UNAUTHENTICATED_ERROR,
     )
+
+
+async def csrf_invalid_exception_handler(
+    _request: Request,
+    _error: CsrfInvalidError,
+) -> JSONResponse:
+    """Return one public response for missing and mismatched CSRF credentials."""
+
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content=CSRF_INVALID_ERROR,
+    )
+
+
+def verify_csrf_token(request: Request) -> None:
+    """Require the readable CSRF cookie to be echoed on unsafe requests."""
+
+    # Safe methods only read state, so they do not need a double-submit credential.
+    if request.method.upper() in SAFE_HTTP_METHODS:
+        return
+
+    settings = get_settings()
+    cookie_token = request.cookies.get(settings.csrf_cookie_name)
+    header_token = request.headers.get("X-CSRF-Token")
+
+    # Constant-time comparison avoids making token equality observable through timing.
+    if (
+        cookie_token is None
+        or header_token is None
+        or not compare_digest(cookie_token, header_token)
+    ):
+        raise CsrfInvalidError
 
 
 def _session_is_expired(session: Session, now: datetime, idle_minutes: int) -> bool:
@@ -106,3 +153,4 @@ def get_current_user(
 
 CurrentPrincipal = Annotated[AuthenticatedPrincipal, Depends(get_current_principal)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+CsrfProtected = Annotated[None, Depends(verify_csrf_token)]

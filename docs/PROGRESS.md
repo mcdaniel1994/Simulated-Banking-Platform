@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M3 — Authentication & Authorization (in progress)
-- Current phase: Phase 12 — Logout and server-side revocation (complete)
-- Current task: Review and commit the completed Phase 12 batch
-- Last completed: Phase 12 — Logout and server-side revocation
-- Next action: Review and commit Phase 12, then begin Phase 13 separately
+- Current phase: Phase 13 — CSRF protection (complete)
+- Current task: Review and commit the completed Phase 13 batch
+- Last completed: Phase 13 — CSRF protection
+- Next action: Review and commit Phase 13, then begin Phase 14 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–12 complete |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–13 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -317,7 +317,7 @@ Status: COMPLETE
 - [x] Confirm old cookie no longer authenticates
 - [x] Add revocation API test
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `43 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
@@ -325,26 +325,31 @@ Completion evidence:
 - Manual verification: Real Uvicorn flow completed login 200 → logout 204 → old-cookie
   `/api/auth/me` 401. Both cookies were cleared with `Max-Age=0`, matching path/security/SameSite
   attributes. PostgreSQL confirmed one revoked session and one logout audit event.
-- Commit:
+- Commit: `5fd1198 feat(auth): add logout with immediate server-side session revocation`
 - Notes: Logout requires a currently valid principal. Revocation and its audit commit atomically;
   cookie deletion is client cleanup only. Phase 13 will add CSRF enforcement to logout and other
   authenticated mutations.
 
 ### Phase 13 — CSRF protection (double-submit)
-Status: NOT STARTED
-- [ ] Issue readable CSRF cookie at session start
-- [ ] CSRF dependency: compare header vs cookie on mutations
-- [ ] Reject mismatch/missing → `CSRF_INVALID`
-- [ ] Exempt safe methods (GET)
-- [ ] Add CSRF reject/accept tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Issue readable CSRF cookie at session start
+- [x] CSRF dependency: compare header vs cookie on mutations
+- [x] Reject mismatch/missing → `CSRF_INVALID`
+- [x] Exempt safe methods (GET)
+- [x] Add CSRF reject/accept tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `45 passed, 1 existing warning`; focused auth tests `15 passed`; Ruff format and lint
+  checks passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn flow completed login 200 → logout without CSRF header 403
+  `CSRF_INVALID` → same session `/api/auth/me` 200 → logout with matching token 204 → old-session
+  `/api/auth/me` 401.
 - Commit:
-- Notes:
+- Notes: Unsafe requests use a reusable dependency that compares the configured readable cookie
+  with `X-CSRF-Token` in constant time. Login remains exempt because it creates the pair; safe
+  methods are exempt. Future POST/PATCH routes must attach `CsrfProtected`.
 
 ### Phase 14 — Role authorization
 Status: NOT STARTED

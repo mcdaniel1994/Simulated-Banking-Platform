@@ -1506,6 +1506,117 @@ but this implementation follows the current plan's valid-session dependency and 
 Review and commit Phase 12. Stop before Phase 13 so double-submit CSRF comparison and route
 attachment remain one separate security phase.
 
+### Entry — 2026-06-29 — Phase 13: Double-Submit CSRF Protection
+
+#### What I Worked On
+
+I added a reusable `CsrfProtected` dependency that compares the configured readable CSRF cookie
+with `X-CSRF-Token` on unsafe HTTP methods. Logout now uses that dependency, while login remains
+exempt because it creates the session/CSRF pair and safe methods remain readable without a token.
+
+#### What I Expected to Happen
+
+I expected missing and mismatched CSRF credentials to return the same 403 `CSRF_INVALID` envelope
+before logout could revoke a session. A matching pair should reach normal authentication and
+logout, and `GET /api/auth/me` should continue to work without a CSRF header.
+
+#### What Actually Happened
+
+Focused tests proved missing and mismatched headers are rejected without revocation or logout
+audits, a matching header allows logout, and a safe GET needs no CSRF token. The full suite passed
+with 45 tests and only the existing FastAPI TestClient warning. Ruff passed, and Alembic reported
+no drift.
+
+A real Uvicorn flow returned 403 for missing CSRF, kept the session usable, accepted a matching
+token with 204, and then rejected the revoked session with 401.
+
+#### Concepts I Learned
+
+- Cookie authentication makes the browser send credentials automatically, which is why an
+  independent token echoed in a custom header is needed for mutations.
+- `SameSite=Strict` helps, but explicit CSRF validation makes the mutation boundary testable and
+  does not depend on one browser policy alone.
+- Constant-time comparison keeps token equality from becoming observable through timing.
+- CSRF rejection should occur before business logic so failed requests cannot mutate state.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Dependency shape | Inline logout check; global middleware; reusable dependency | Reusable dependency alias | Future mutation routes can opt into one explicit, testable contract. | Every POST/PATCH route must remember to attach it. |
+| Safe methods | Exempt GET only; exempt GET/HEAD/OPTIONS | Exempt GET/HEAD/OPTIONS | These methods are defined as read-only or protocol support and should not mutate state. | Any route that violates safe-method semantics would bypass this guard. |
+| Token comparison | Normal equality; constant-time equality | `hmac.compare_digest` | It is a standard low-cost security primitive for secret comparison. | Both submitted values must be strings of the same general type. |
+| Failure ordering | Authenticate first; CSRF first | CSRF first on protected routes | Rejected cross-site requests do not slide session activity or reach database-backed auth work. | An unauthenticated unsafe request with invalid CSRF receives 403 before 401. |
+
+#### Problems I Encountered
+
+- The managed shell initially denied access to uv's user cache during the real-server smoke
+  client command.
+
+#### How I Diagnosed Them
+
+- The automated suite and Uvicorn server were already healthy; the error named the cache path and
+  occurred before the HTTP client ran.
+
+#### How I Solved Them
+
+- I reran the same bounded local smoke command with approved environment access and kept all
+  credentials and token values out of output.
+
+#### Tests I Added
+
+- Missing and mismatched CSRF headers return the identical 403 `CSRF_INVALID` contract.
+- CSRF rejection leaves the current session unrevoked and emits no logout audit.
+- A safe authenticated GET succeeds without a CSRF header after a rejected mutation.
+- Existing successful logout now proves a matching double-submit pair is accepted.
+
+Result: `45 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest tests/api/test_auth.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8013
+```
+
+#### Files I Changed
+
+- `backend/app/api/deps.py`
+- `backend/app/api/routes/auth.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_auth.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Missing and mismatched values share one response and neither submitted token is logged.
+- CSRF failure runs before principal resolution on logout, preventing rejected requests from
+  updating `last_used_at`.
+- Login intentionally remains unprotected because no double-submit pair exists before login.
+- Future unsafe endpoints must explicitly use `CsrfProtected`; route review and integration tests
+  must enforce that convention.
+
+#### What I Would Do Differently
+
+For a much larger API, I would consider router-level dependencies or middleware to reduce the
+chance that a new mutation omits the guard. Per-route attachment is clearer for this teaching-sized
+application and preserves intentional exceptions such as login.
+
+#### Questions I Still Have
+
+- None for Phase 13. Phase 14 is intentionally separate.
+
+#### Next Step
+
+Review and commit Phase 13. Stop before Phase 14 so role authorization remains its own bounded
+security phase.
+
 ---
 
 ## Long-Term Logs
@@ -1532,6 +1643,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D13 | 2026-06-29 | Use enumeration-resistant login, host-prefixed auth cookies, and minimal cookie-only session output | Phase 10 login composition | Early unknown-user return; generic timing; normal vs host cookie; return user vs status | Dummy Argon2 work, generic envelopes, and `__Host-session` strengthen the first auth boundary without exposing raw tokens. | Domain cookies fall back to `session`; `/auth/me` supplies user state later; Phase 17 centralizes the envelope. |
 | D14 | 2026-06-29 | Return a user/session principal, expire inclusively, and slide idle activity on every valid request | Phase 11 session resolution | User only vs principal; exclusive vs inclusive boundary; thresholded vs every request | The principal supports logout reuse, inclusive deadlines fail closed, and per-request sliding matches the approved plan. | Authenticated requests commit `last_used_at`; Phase 12 can revoke the resolved session directly. |
 | D15 | 2026-06-29 | Require a valid principal for logout and atomically pair revocation with its audit | Phase 12 logout | Idempotent invalid logout; valid-only logout; separate vs shared commit | A concrete resolved session supports durable revocation proof and consistent audit history. | Invalid cookies return 401; both cookies are cleared only after revocation commits; Phase 13 adds CSRF. |
+| D16 | 2026-06-29 | Use an explicit reusable CSRF dependency with constant-time comparison before authentication | Phase 13 mutation protection | Inline checks; global middleware; per-route dependency; auth-first vs CSRF-first | A named dependency keeps mutation protection visible and reusable, while early rejection avoids session activity from invalid cross-site requests. | Login and safe methods are exempt; every future POST/PATCH route must attach `CsrfProtected`; invalid unsafe requests receive 403 before authentication runs. |
 
 ### Debugging Log
 

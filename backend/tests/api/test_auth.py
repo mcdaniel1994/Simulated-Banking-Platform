@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from app.api.deps import UNAUTHENTICATED_ERROR, _session_is_expired
+from app.api.deps import CSRF_INVALID_ERROR, UNAUTHENTICATED_ERROR, _session_is_expired
 from app.core.security import HOST_SESSION_COOKIE_NAME, hash_session_token
 from app.db.session import get_db
 from app.main import app
@@ -357,9 +357,14 @@ def test_logout_revokes_server_side_clears_cookies_and_audits(
     )
     assert login_response.status_code == 200
     old_raw_token = login_response.cookies.get(HOST_SESSION_COOKIE_NAME)
+    csrf_token = login_response.cookies.get("csrf_token")
     assert old_raw_token is not None
+    assert csrf_token is not None
 
-    response = client.post("/api/auth/logout")
+    response = client.post(
+        "/api/auth/logout",
+        headers={"X-CSRF-Token": csrf_token},
+    )
 
     assert response.status_code == 204
     cookie_headers = response.headers.get_list("set-cookie")
@@ -399,7 +404,12 @@ def test_logout_requires_a_valid_current_session(
 ) -> None:
     client, session_factory = login_test_context
 
-    response = client.post("/api/auth/logout")
+    # Supplying a matching double-submit pair isolates authentication as the rejected boundary.
+    client.cookies.set("csrf_token", "matching-test-csrf-token")
+    response = client.post(
+        "/api/auth/logout",
+        headers={"X-CSRF-Token": "matching-test-csrf-token"},
+    )
 
     assert response.status_code == 401
     assert response.json() == UNAUTHENTICATED_ERROR
@@ -413,3 +423,46 @@ def test_logout_requires_a_valid_current_session(
             )
             == 0
         )
+
+
+@pytest.mark.parametrize(
+    "csrf_header",
+    [None, "wrong-csrf-token"],
+    ids=["missing-header", "mismatched-header"],
+)
+def test_logout_rejects_missing_or_mismatched_csrf_without_revoking(
+    csrf_header: str | None,
+    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
+) -> None:
+    client, session_factory = login_test_context
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+    )
+    assert login_response.status_code == 200
+
+    headers = {} if csrf_header is None else {"X-CSRF-Token": csrf_header}
+    response = client.post("/api/auth/logout", headers=headers)
+
+    assert response.status_code == 403
+    assert response.json() == CSRF_INVALID_ERROR
+    assert not response.headers.get_list("set-cookie")
+
+    # Rejected CSRF requests cannot mutate revocation state or create a misleading audit record.
+    with session_factory() as db:
+        session = db.scalar(select(Session))
+        assert session is not None
+        assert session.revoked_at is None
+        assert session.last_used_at == session.created_at
+        assert (
+            db.scalar(
+                select(func.count())
+                .select_from(AuditEvent)
+                .where(AuditEvent.event_type == "logout")
+            )
+            == 0
+        )
+
+    # The untouched session still authenticates a safe GET without any CSRF header.
+    me_response = client.get("/api/auth/me")
+    assert me_response.status_code == 200
