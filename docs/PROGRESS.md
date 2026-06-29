@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M3 — Authentication & Authorization (in progress)
-- Current phase: Phase 14 — Role authorization (complete)
-- Current task: Review and commit the completed Phase 14 batch
-- Last completed: Phase 14 — Role authorization
-- Next action: Review and commit Phase 14; do not begin Phase 15 yet
+- Current phase: Phase 15 — Ownership authorization (complete)
+- Current task: Review and commit the completed Phase 15 batch
+- Last completed: Phase 15 — Ownership authorization
+- Next action: Review and commit Phase 15; do not begin Phase 16 yet
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–14 complete |
+| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–15 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -359,7 +359,7 @@ Status: COMPLETE
 - [x] Role read only from DB user
 - [x] Add role API tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `49 passed, 1 existing warning`; focused authorization tests `4 passed`; Ruff format and
@@ -367,26 +367,31 @@ Completion evidence:
 - Manual verification: A real Uvicorn test-probe flow logged in each seeded role with 200. ADMIN
   reached the ADMIN guard with 200 and received 403 `FORBIDDEN` from the CUSTOMER guard; CUSTOMER
   reached the CUSTOMER guard with 200 and received 403 `FORBIDDEN` from the ADMIN guard.
-- Commit:
+- Commit: `8c36a8e feat(auth): implement role-based authorization with require_role dependency and
+  403 handling`
 - Notes: `require_role(...)` receives only the authenticated `User` resolved through the
   SQL-backed session dependency. Named `AdminUser` and `CustomerUser` aliases keep future route
   signatures explicit. Client-supplied role headers are ignored. Permission-denied audit writes
   remain required by SPEC §16 but are outside Phase 14's explicit dependency-only completion scope.
 
 ### Phase 15 — Ownership authorization (no IDOR)
-Status: NOT STARTED
-- [ ] Account-by-id dependency filtered to current user
-- [ ] 404 `NOT_FOUND` when missing/not owned
-- [ ] Single shared entry point for account-scoped routes
-- [ ] Add ownership/IDOR API tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Account-by-id dependency filtered to current user
+- [x] 404 `NOT_FOUND` when missing/not owned
+- [x] Single shared entry point for account-scoped routes
+- [x] Add ownership/IDOR API tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `53 passed, 1 existing warning`; focused ownership tests `4 passed`; Ruff format and lint
+  checks passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn test-probe flow completed customer login 200 → owned account
+  200 → another customer's account 404 `NOT_FOUND` → missing account 404 `NOT_FOUND`.
 - Commit:
-- Notes:
+- Notes: `get_owned_account` composes the CUSTOMER role guard with one SQL query filtered by both
+  account ID and authenticated user ID. `OwnedAccount` is the single entry point for future
+  customer account-scoped routes. ADMIN receives 403 and cannot reuse customer ownership logic.
 
 ### Phase 16 — Auth/authz/CSRF test suite
 Status: NOT STARTED

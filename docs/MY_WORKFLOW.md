@@ -1731,6 +1731,113 @@ contract tests at those product endpoints instead of relying only on probes.
 Review and commit Phase 14. Stop before Phase 15 so ownership authorization and its 404 anti-IDOR
 behavior remain a separate bounded phase.
 
+### Entry — 2026-06-29 — Phase 15: Ownership Authorization
+
+#### What I Worked On
+
+I added `get_owned_account`, which requires an authenticated CUSTOMER and loads an account using
+one SQL query filtered by both `account_id` and the authenticated user's ID. The `OwnedAccount`
+alias gives every future customer account route one reusable ownership boundary.
+
+Missing and non-owned accounts now map to the same stable 404 `NOT_FOUND` envelope.
+
+#### What I Expected to Happen
+
+I expected a customer to load an owned account, receive an indistinguishable 404 for another
+customer's account or a nonexistent ID, and never expose customer ownership behavior to ADMIN.
+
+#### What Actually Happened
+
+All four focused tests passed. The own-account request returned 200; another customer's account and
+a missing account returned the identical 404 response; ADMIN was rejected by the CUSTOMER role
+guard with 403. The full suite passed with 53 tests and the existing TestClient warning. Ruff
+passed, and Alembic reported no drift.
+
+A real Uvicorn flow reproduced login 200, owned account 200, other account 404 `NOT_FOUND`, and
+missing account 404 `NOT_FOUND`.
+
+#### Concepts I Learned
+
+- IDOR prevention requires authorization inside the database lookup, not merely hidden frontend
+  links or an account ID check after loading.
+- Combining resource ID and owner ID in one query ensures another customer's row never crosses the
+  application boundary.
+- Returning 404 for both absent and non-owned resources prevents callers from discovering which
+  account IDs exist.
+- Role and ownership checks compose: CUSTOMER establishes the allowed actor class, then ownership
+  narrows access to that customer's resource.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Ownership lookup | Load by ID then compare; query by ID and owner together | Filter by ID and owner together | It prevents another customer's row from entering application logic and naturally unifies missing/non-owned results. | Future admin lookups need a separate path instead of reusing this dependency. |
+| Dependency composition | Current user only; CUSTOMER role plus ownership | CUSTOMER role plus ownership | The specification says admins are not owners, and protected customer routes need all three layers. | ADMIN receives 403 before account existence is considered. |
+| Shared route type | Repeat checks in routes; `OwnedAccount` alias | `OwnedAccount` alias | One visible annotation reduces the chance of inconsistent account-scoped authorization. | Every future customer account route must deliberately use the alias. |
+
+#### Problems I Encountered
+
+- The first full-suite command could not initialize uv's cache under the managed filesystem.
+
+#### How I Diagnosed Them
+
+- The error identified uv's user-cache path and occurred before pytest began.
+
+#### How I Solved Them
+
+- I reran the bounded `uv run` verification with approved cache access.
+
+#### Tests I Added
+
+- A CUSTOMER can load an account they own.
+- Another customer's account returns 404 `NOT_FOUND`.
+- A nonexistent account returns the identical 404 `NOT_FOUND`.
+- ADMIN receives 403 and cannot enter the customer ownership boundary.
+
+Result: `53 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest tests/api/test_ownership.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn tests.api.test_ownership:app --host 127.0.0.1 --port 8015
+```
+
+#### Files I Changed
+
+- `backend/app/api/deps.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_ownership.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Owner identity comes only from the SQL-backed authenticated user, never a request field.
+- Non-owned account rows are not loaded before the authorization decision.
+- Missing and non-owned resources share status, code, message, and fields.
+- Future customer account-scoped routes must use `OwnedAccount`; admin resource access requires a
+  distinct admin service/query path.
+
+#### What I Would Do Differently
+
+When Phase 18 adds real account routes, I will retain these boundary tests and add product-route
+tests proving those routes actually declare `OwnedAccount`.
+
+#### Questions I Still Have
+
+- None for Phase 15.
+
+#### Next Step
+
+Review and commit Phase 15. Stop before Phase 16 so security-suite consolidation remains a
+separate phase.
+
 ---
 
 ## Long-Term Logs
@@ -1759,6 +1866,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D15 | 2026-06-29 | Require a valid principal for logout and atomically pair revocation with its audit | Phase 12 logout | Idempotent invalid logout; valid-only logout; separate vs shared commit | A concrete resolved session supports durable revocation proof and consistent audit history. | Invalid cookies return 401; both cookies are cleared only after revocation commits; Phase 13 adds CSRF. |
 | D16 | 2026-06-29 | Use an explicit reusable CSRF dependency with constant-time comparison before authentication | Phase 13 mutation protection | Inline checks; global middleware; per-route dependency; auth-first vs CSRF-first | A named dependency keeps mutation protection visible and reusable, while early rejection avoids session activity from invalid cross-site requests. | Login and safe methods are exempt; every future POST/PATCH route must attach `CsrfProtected`; invalid unsafe requests receive 403 before authentication runs. |
 | D17 | 2026-06-29 | Build parameterized SQL-backed role guards and expose named ADMIN/CUSTOMER aliases | Phase 14 role authorization | Separate guard functions; one factory; inline route checks | One factory prevents policy drift, while aliases keep each route's required role visible and return the already authenticated SQL user. | Client role input is ignored; mismatches share a 403 `FORBIDDEN` envelope; future protected routes must choose the appropriate alias. |
+| D18 | 2026-06-29 | Filter customer account lookups by resource ID and authenticated owner ID in one query | Phase 15 ownership authorization | Load then compare; combined filter; route-local checks | A combined query keeps non-owned rows outside application logic and naturally gives missing and non-owned resources one 404 outcome. | Customer account routes use `OwnedAccount`; ADMIN cannot reuse customer ownership logic and needs separate admin queries. |
 
 ### Debugging Log
 

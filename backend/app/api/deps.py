@@ -13,7 +13,7 @@ from sqlalchemy.orm import joinedload
 from app.core.config import get_settings
 from app.core.security import get_session_cookie_name, hash_session_token
 from app.db.session import get_db
-from app.models import Session, User, UserRole
+from app.models import Account, Session, User, UserRole
 
 UNAUTHENTICATED_ERROR = {
     "error": {
@@ -39,6 +39,14 @@ FORBIDDEN_ERROR = {
     }
 }
 
+NOT_FOUND_ERROR = {
+    "error": {
+        "code": "NOT_FOUND",
+        "message": "Resource not found",
+        "fields": {},
+    }
+}
+
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
@@ -52,6 +60,10 @@ class CsrfInvalidError(Exception):
 
 class ForbiddenError(Exception):
     """Internal signal for an authenticated user with the wrong SQL role."""
+
+
+class NotFoundError(Exception):
+    """Internal signal that conceals whether an account exists for another owner."""
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,18 @@ async def forbidden_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
         content=FORBIDDEN_ERROR,
+    )
+
+
+async def not_found_exception_handler(
+    _request: Request,
+    _error: NotFoundError,
+) -> JSONResponse:
+    """Return one public response for missing and non-owned customer resources."""
+
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=NOT_FOUND_ERROR,
     )
 
 
@@ -195,3 +219,26 @@ CsrfProtected = Annotated[None, Depends(verify_csrf_token)]
 # Named aliases keep route signatures explicit while sharing the same role-checking factory.
 AdminUser = Annotated[User, Depends(require_role(UserRole.ADMIN))]
 CustomerUser = Annotated[User, Depends(require_role(UserRole.CUSTOMER))]
+
+
+def get_owned_account(
+    account_id: int,
+    customer: CustomerUser,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> Account:
+    """Load one account only when its SQL owner is the authenticated customer."""
+
+    # Filtering by resource and owner together prevents existence disclosure and IDOR access.
+    account = db.scalar(
+        select(Account).where(
+            Account.id == account_id,
+            Account.user_id == customer.id,
+        )
+    )
+    if account is None:
+        raise NotFoundError
+    return account
+
+
+# Every future account-scoped customer route should enter through this ownership boundary.
+OwnedAccount = Annotated[Account, Depends(get_owned_account)]
