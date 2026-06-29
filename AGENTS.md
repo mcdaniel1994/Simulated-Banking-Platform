@@ -62,6 +62,10 @@ When showing code:
 
 - Explain the concept first.
 - Provide only the code needed for the current task.
+- Add brief inline comments to each meaningful section of code so I can quickly understand its
+  purpose and how it connects to the surrounding code as the project grows.
+- Keep comments focused on intent, responsibility, or non-obvious behavior rather than restating
+  self-explanatory syntax, and update comments when the related behavior changes.
 - Explain how the code interacts with the rest of the system.
 - Explain important trade-offs.
 - Use descriptive names and clear structure.

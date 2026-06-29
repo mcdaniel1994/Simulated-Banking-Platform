@@ -225,6 +225,129 @@ Initializing it during Phase 0 resolved the ordering conflict.
 Review this entry, update the Phase 1 completion record, and commit the finished foundation. After
 that commit is verified, begin Phase 2 with only the FastAPI application and health endpoint.
 
+### Entry — 2026-06-29 — Phase 2: FastAPI App and Health Endpoint
+
+#### What I Worked On
+
+I created the central FastAPI application, added a dedicated health router, mounted it under the
+shared `/api` prefix, and added an integration test for `GET /api/health`. I then ran the app with
+Uvicorn and verified the health response, Swagger UI, and OpenAPI contract over real HTTP requests.
+
+#### What I Expected to Happen
+
+I expected the application to boot locally, expose `GET /api/health`, return a small liveness
+payload, and publish the route in the generated API documentation.
+
+#### What Actually Happened
+
+The application started on `127.0.0.1:8000`. The health endpoint returned HTTP 200 with
+`{"status":"ok"}`, `/docs` returned HTTP 200, and `/openapi.json` contained `/api/health`. The
+integration test passed, and Ruff reported that all application and test files were formatted and
+free of configured lint violations.
+
+The installed FastAPI version emitted a deprecation warning for its legacy TestClient/httpx
+integration. The test still passed, so I recorded the warning as technical debt instead of changing
+the planned dependency stack during this phase.
+
+#### Concepts I Learned
+
+- The FastAPI `app` object is an ASGI application that Uvicorn can serve.
+- `APIRouter` keeps endpoint definitions separate from application startup.
+- Mounting a router with the `/api` prefix gives the backend one consistent public namespace.
+- A liveness endpoint proves the process can respond; it should not be confused with a readiness
+  check that verifies database or external-service access.
+- FastAPI generates Swagger UI and an OpenAPI contract from the registered routes.
+- An integration test should exercise the HTTP contract rather than call the route function
+  directly.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Health route organization | Define it in `main.py`; use a dedicated router | Dedicated router | It establishes the thin-route organization that later endpoints will follow. | It adds one small module for a simple endpoint. |
+| Health-check depth | Process-only liveness; include database reachability | Process-only liveness | Phase 2 has no database, and liveness should remain independent of downstream services. | A separate readiness endpoint is still needed later. |
+| Test style | Call the function directly; make an HTTP request through the app | HTTP integration test | It verifies routing, prefixing, status code, and response serialization together. | It depends on FastAPI's testing integration. |
+
+#### Problems I Encountered
+
+- New Python files initially lacked a final newline, which caused formatting failures.
+- An editor-added `type: ignore` comment hid an import warning and caused Ruff to reject the import
+  block.
+- The configured import rule required one blank line before a module variable rather than two.
+- FastAPI's internal included-router object did not expose `.path` through the older inspection
+  expression.
+- The passing test emitted a TestClient/httpx deprecation warning.
+
+#### How I Diagnosed Them
+
+- I compared the file output and Ruff's proposed non-writing diffs.
+- I verified the actual interpreter and successful FastAPI import instead of suppressing the
+  editor warning.
+- I inspected the generated OpenAPI paths rather than relying on FastAPI's internal route
+  container.
+- I read pytest's warning output and separated it from the successful test result.
+
+#### How I Solved Them
+
+- I used Ruff to apply the mechanical whitespace and import-order corrections.
+- I removed the unnecessary type suppression and kept the real import visible to tooling.
+- I verified `/api/health` through OpenAPI and then through an actual Uvicorn HTTP request.
+- I recorded the deprecation warning for later dependency review instead of expanding Phase 2.
+
+#### Tests I Added
+
+- `tests/api/test_health.py`
+  - Confirms `GET /api/health` returns HTTP 200.
+  - Confirms the response body is exactly `{"status": "ok"}`.
+
+Result: `1 passed, 1 warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest -q
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+curl -i http://127.0.0.1:8000/api/health
+curl -I http://127.0.0.1:8000/docs
+cd ..
+```
+
+#### Files I Changed
+
+- `AGENTS.md`
+- `backend/app/main.py`
+- `backend/app/api/routes/health.py`
+- `backend/tests/api/test_health.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- The health endpoint is intentionally public and returns no configuration, dependency, or secret
+  information.
+- The endpoint checks only process liveness, so a database outage will not incorrectly stop the
+  process from reporting that it is alive.
+- All application endpoints are grouped under `/api`, supporting the planned single-origin
+  deployment.
+
+#### What I Would Do Differently
+
+I would configure my editor to use `backend/.venv/bin/python` before editing Python files so it
+does not suggest unnecessary import suppressions.
+
+#### Questions I Still Have
+
+- When should the FastAPI TestClient/httpx deprecation be migrated to the recommended replacement?
+- What database behavior should the future `/api/ready` endpoint verify?
+
+#### Next Step
+
+Review and commit Phase 2. Stop before Phase 3 so configuration and environment variables remain a
+separate, focused change.
+
 ---
 
 ## Long-Term Logs

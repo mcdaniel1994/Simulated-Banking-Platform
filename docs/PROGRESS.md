@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M1 — Repo & Backend Foundation
-- Current phase: Phase 1 — Repository structure & tooling (complete)
-- Current task: Phase 1 closed
-- Last completed: Phase 1 — Repository structure & tooling
-- Next action: Begin Phase 2 — FastAPI app + health endpoint
+- Current phase: Phase 2 — FastAPI app + health endpoint (complete)
+- Current task: Phase 2 closed
+- Last completed: Phase 2 — FastAPI app + health endpoint
+- Next action: Begin Phase 3 — Configuration & environment variables
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -20,7 +20,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | Milestone | Status | Started | Completed | Notes |
 |---|---|---|---|---|
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
-| M1 — Repo & Backend Foundation | IN PROGRESS | 2026-06-29 |  | Phase 1 started; uv selected |
+| M1 — Repo & Backend Foundation | IN PROGRESS | 2026-06-29 |  | Phases 1–2 complete |
 | M2 — Database | NOT STARTED |  |  |  |
 | M3 — Authentication & Authorization | NOT STARTED |  |  |  |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
@@ -82,20 +82,22 @@ Completion evidence:
   `uv.lock`. No application behavior exists yet.
 
 ### Phase 2 — FastAPI app + health endpoint
-Status: NOT STARTED
-- [ ] Create the FastAPI app instance
-- [ ] Add `GET /api/health` router
-- [ ] Include the router under `/api`
-- [ ] Run with uvicorn locally
-- [ ] Add health integration test
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Create the FastAPI app instance
+- [x] Add `GET /api/health` router
+- [x] Include the router under `/api`
+- [x] Run with uvicorn locally
+- [x] Add health integration test
+- [x] Record decisions and learning notes in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `1 passed, 1 warning`; Ruff format and lint checks passed across `app` and `tests`.
+- Manual verification: Uvicorn started on `127.0.0.1:8000`; `/api/health` returned HTTP 200 with
+  `{"status":"ok"}`; `/docs` returned HTTP 200; OpenAPI included `/api/health`.
+- Commit: `feat(api): add FastAPI app and /api/health endpoint`
+- Notes: FastAPI emitted a deprecation warning for the legacy TestClient/httpx integration; tracked
+  as technical debt. This endpoint is liveness-only and intentionally does not check a database.
 
 ### Phase 3 — Configuration & environment variables
 Status: NOT STARTED
@@ -778,7 +780,7 @@ Status: NOT STARTED
 ## Technical debt
 | Item | Introduced in | Why accepted | Pay-down plan |
 |---|---|---|---|
-|  |  |  |  |
+| FastAPI TestClient warns that its legacy httpx integration is deprecated | Phase 2 | The health integration test passes, and changing the planned client dependency would expand this phase | Review FastAPI's supported replacement before the broader API test suite in Phase 16 |
 
 ## Submission readiness checklist (SPEC §21)
 - [ ] 1. Demo customer & admin login; cookie `HttpOnly`/`Secure`/`SameSite=Strict`
