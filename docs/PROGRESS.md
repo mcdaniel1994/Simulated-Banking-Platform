@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M4 — Banking Domain (in progress)
-- Current phase: Phase 18 — Account read operations (complete)
-- Current task: Review and commit the completed Phase 18 batch
-- Last completed: Phase 18 — Account read operations
-- Next action: Review and commit Phase 18; do not begin Phase 19 yet
+- Current phase: Phase 19 — Transaction history (complete)
+- Current task: Review and commit the completed Phase 19 batch
+- Last completed: Phase 19 — Transaction history
+- Next action: Review and commit Phase 19; do not begin Phase 20 yet
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -23,7 +23,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
-| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–18 complete |
+| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–19 complete |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
@@ -451,7 +451,7 @@ Status: COMPLETE
 - [x] Thin routes; 404 on non-owned
 - [x] Add account read API tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused account API tests `5 passed`; full suite `71 passed, 1 existing warning`; Ruff
@@ -459,26 +459,30 @@ Completion evidence:
 - Manual verification: Real Uvicorn flow completed customer login 200 → account list 200 with two
   owned accounts and string balances → owned detail 200 → another customer's detail 404
   `NOT_FOUND`.
-- Commit:
+- Commit: `fec88c3 feat(accounts): add account list and detail read endpoints`
 - Notes: `AccountResponse` exposes no owner ID and converts `Decimal` directly to a two-decimal
   string. The list service filters by authenticated customer ID; detail reuses `OwnedAccount`
   without a duplicate query. ADMIN receives 403 from both customer routes.
 
 ### Phase 19 — Transaction history (paginated)
-Status: NOT STARTED
-- [ ] Transaction response schema (strings)
-- [ ] `GET /accounts/{id}/transactions` (owned, paginated)
-- [ ] `GET /transactions` (cross-account, paginated)
-- [ ] Validate/clamp pagination
-- [ ] Add pagination + ownership tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Transaction response schema (strings)
+- [x] `GET /accounts/{id}/transactions` (owned, paginated)
+- [x] `GET /transactions` (cross-account, paginated)
+- [x] Validate/clamp pagination
+- [x] Add pagination + ownership tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused transaction API tests `8 passed`; full suite `79 passed, 1 existing warning`;
+  Ruff format and lint checks passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn flow returned two disjoint customer-wide pages, an owned
+  per-account page with string money, and 404 `NOT_FOUND` for another customer's account history.
 - Commit:
-- Notes:
+- Notes: Pagination defaults to `limit=20`, permits at most 100, and starts at `offset=0`; invalid
+  bounds return 422 rather than being silently clamped. Results are ordered by `created_at DESC,
+  id DESC`. Customer-wide SQL joins accounts and filters by the authenticated customer.
 
 ### Phase 20 — Deposit
 Status: NOT STARTED

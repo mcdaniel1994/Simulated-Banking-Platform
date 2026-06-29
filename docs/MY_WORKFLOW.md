@@ -2199,6 +2199,118 @@ relying on the current ID ordering chosen for deterministic behavior.
 Review and commit Phase 18. Stop before Phase 19 so pagination and transaction-history ordering
 remain a separate bounded phase.
 
+### Entry — 2026-06-29 — Phase 19: Paginated Transaction History
+
+#### What I Worked On
+
+I added paginated transaction history for one owned account and across all accounts owned by the
+authenticated customer. Both services return newest-first pages ordered by `created_at DESC` and
+`id DESC`.
+
+I created `TransactionResponse`, which exposes the owning account ID for combined-feed context and
+serializes both `amount` and `balance_after` directly from `Decimal` to two-decimal strings.
+
+#### What I Expected to Happen
+
+I expected stable, non-overlapping `limit`/`offset` pages; only the customer's transactions in the
+combined feed; 404 for another customer's per-account history; 403 for ADMIN; and validation
+errors for unsafe pagination bounds.
+
+#### What Actually Happened
+
+Eight focused tests passed. They proved per-account and cross-account ordering, page slicing,
+ownership filtering, role denial, pagination validation, string money, and OpenAPI string types.
+The full suite passed 79 tests with the existing TestClient warning. Ruff passed, and Alembic
+reported no drift.
+
+A real Uvicorn flow returned two disjoint customer-wide pages, an owned per-account page with a
+string amount, and 404 `NOT_FOUND` for another customer's history.
+
+#### Concepts I Learned
+
+- Offset pagination needs a deterministic unique ordering or rows with equal timestamps can move
+  between pages.
+- `created_at DESC, id DESC` gives a useful newest-first feed and a stable tie-breaker.
+- Cross-account ownership belongs in the SQL join predicate, not in post-query filtering.
+- Rejecting an excessive page size makes the API contract observable instead of silently changing
+  the caller's request.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Page bounds | Default 20/50; max 100/200; silent clamp; validation error | Default 20, max 100, reject invalid | It is practical for UI pages, caps query work, and makes invalid input explicit. | Clients must correct requests above the maximum. |
+| History order | Oldest first; account-grouped; newest first | `created_at DESC, id DESC` | Users usually need recent activity first, and ID uniquely stabilizes timestamp ties. | Offset pagination can still shift when newer rows are inserted between requests. |
+| Cross-account service | Filter rows in Python; join accounts in SQL | SQL join filtered by customer ID | Other customers' rows never cross the persistence boundary. | The query depends on the account ownership join. |
+
+#### Problems I Encountered
+
+- Ruff requested one mechanical formatting change in the transaction test module.
+
+#### How I Diagnosed Them
+
+- The format check identified the file before tests ran.
+
+#### How I Solved Them
+
+- I applied Ruff's formatter and reran format, lint, focused tests, and the full suite.
+
+#### Tests I Added
+
+- Owned account history is newest-first and paginated.
+- Customer-wide pages are chronological, disjoint, and contain only owned account IDs.
+- Another customer's account history returns 404 `NOT_FOUND`.
+- Limits below 1 or above 100 and negative offsets return 422 `VALIDATION_ERROR`.
+- ADMIN receives 403 from both transaction-history routes.
+- `amount` and `balance_after` are strings in runtime responses and OpenAPI.
+
+Result: `79 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest tests/api/test_transactions.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8019
+```
+
+#### Files I Changed
+
+- `backend/app/schemas/transaction.py`
+- `backend/app/services/transaction_service.py`
+- `backend/app/api/routes/transactions.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_transactions.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Per-account history uses the shared `OwnedAccount` dependency.
+- Customer-wide history filters ownership in SQL.
+- ADMIN cannot use customer history routes.
+- Page size is bounded to limit database work.
+- Money never passes through floating point.
+
+#### What I Would Do Differently
+
+For a high-write production ledger, I would prefer cursor pagination because offset pages can shift
+when new transactions arrive. Limit/offset is the explicit MVP contract and is simpler to teach.
+
+#### Questions I Still Have
+
+- Phase 20 must confirm the permitted deposit amount precision and upper limit before accepting
+  money input.
+
+#### Next Step
+
+Review and commit Phase 19. Stop before Phase 20 so the first money mutation, locking, CSRF, and
+audit behavior remain a separate bounded phase.
+
 ---
 
 ## Long-Term Logs
@@ -2231,6 +2343,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D19 | 2026-06-29 | Use function-scoped authenticated role fixtures that call the real login route | Phase 16 security-suite consolidation | Mock principals; inject cookies; real seeded login; broader fixture scope | Real login preserves the SQL user, session, and cookie boundary while function scope prevents state leakage. | Authorization tests perform more Argon2/database work but remain realistic and isolated. |
 | D20 | 2026-06-29 | Centralize typed domain errors and catch unexpected failures before server traceback logging | Phase 17 error boundary | Route-local responses; per-error handlers; outer exception handler; application middleware | One domain handler keeps contracts stable, while middleware prevents Uvicorn from logging raw secret-bearing exception messages. | Validation fields are sanitized; internal logs retain only exception type, method, and path until structured logging hardening. |
 | D21 | 2026-06-29 | Publish account balances as two-decimal strings converted directly from `Decimal` | Phase 18 account reads | JSON number; serialized Decimal; schema-level string | A string contract is exact across JSON and JavaScript, and the schema advertises the representation clearly. | Frontend aggregation must use decimal-safe parsing; `user_id` remains omitted from customer responses. |
+| D22 | 2026-06-29 | Use limit/offset pagination with default 20, maximum 100, and newest-first stable ordering | Phase 19 transaction history | Different page sizes; silent clamp; oldest/account-grouped/newest order | Bounded explicit validation limits work; `created_at DESC, id DESC` gives a useful feed and stable timestamp ties. | Invalid bounds return 422; offset pages can shift under concurrent inserts, so cursor pagination remains a future production option. |
 
 ### Debugging Log
 
