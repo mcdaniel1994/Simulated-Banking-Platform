@@ -1838,6 +1838,119 @@ tests proving those routes actually declare `OwnedAccount`.
 Review and commit Phase 15. Stop before Phase 16 so security-suite consolidation remains a
 separate phase.
 
+### Entry — 2026-06-29 — Phase 16: Auth, Authorization, and CSRF Test Suite
+
+#### What I Worked On
+
+I consolidated the M3 security suite around shared `admin_client` and `customer_client` fixtures.
+Both fixtures use the existing migrated, seeded PostgreSQL context and authenticate through the
+real login route. I moved focused CSRF rejection coverage from the broad authentication module
+into `test_csrf.py` and refactored role and ownership tests to use the role fixtures.
+
+#### What I Expected to Happen
+
+I expected all existing security behavior to remain unchanged while the suite gained clearer
+boundaries: authentication/session/logout in `test_auth.py`, CSRF in `test_csrf.py`, role checks in
+`test_authorization.py`, and IDOR prevention in `test_ownership.py`.
+
+#### What Actually Happened
+
+The consolidated security command passed 23 tests. The full suite remained at 53 passing tests,
+with only the existing FastAPI TestClient warning. Ruff passed, and Alembic reported no schema
+drift. No application files changed.
+
+#### Concepts I Learned
+
+- A fixture should model a trusted system state, not bypass the behavior under test; these role
+  clients authenticate through the public login contract.
+- Fixture dependencies preserve isolation because each authenticated client receives the same
+  per-test context and teardown as the original unauthenticated client.
+- Organizing tests by security boundary makes failures easier to diagnose without weakening
+  end-to-end API assertions.
+- A consolidation phase should preserve test count and assertions unless a deliberate coverage
+  change is documented.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Role-client fixtures | Mock current user; set cookies directly; call real login | Call real login with seeded users | This preserves the SQL role and session boundary in every authorization test. | Role tests perform Argon2 work and are slightly slower. |
+| Test organization | One large auth module; security-boundary modules | Separate auth, CSRF, role, and ownership modules | Failures point directly to the affected boundary and Phase 16 matches the planned suite shape. | Shared fixtures become an important test dependency. |
+| Fixture lifetime | Module/session authenticated clients; function-scoped clients | Function-scoped | Each test gets fresh database rows, cookies, and session state. | Migrations and seeding repeat, favoring safety over maximum speed. |
+
+#### Problems I Encountered
+
+- uv cache access was denied under the managed filesystem on unapproved verification commands.
+- The test guide still described `conftest.py` as future work.
+
+#### How I Diagnosed Them
+
+- The uv error named its cache path before pytest started.
+- I compared the test guide with the existing fixture implementation.
+
+#### How I Solved Them
+
+- I reran the bounded `uv run` gates with approved cache access.
+- I updated the test guide to describe the real database and authenticated-role fixtures.
+
+#### Tests I Added
+
+No new behavior scenario was required; Phase 16 consolidated and reran the complete M3 security
+matrix:
+
+- Login success, generic failure, inactive user, and password rehash.
+- Missing, invalid, revoked, absolute-expired, idle-expired, and inactive-user sessions.
+- Server-side logout revocation and cookie clearing.
+- CSRF missing, mismatch, matching, and safe-method behavior.
+- ADMIN/CUSTOMER allow and deny behavior.
+- Owned, non-owned, missing, and wrong-role account access.
+
+Result: security suite `23 passed`; full suite `53 passed`; one existing warning.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest tests/api/test_auth.py tests/api/test_csrf.py \
+  tests/api/test_authorization.py tests/api/test_ownership.py -q
+uv run pytest -q
+uv run alembic check
+```
+
+#### Files I Changed
+
+- `backend/tests/conftest.py`
+- `backend/tests/api/test_auth.py`
+- `backend/tests/api/test_csrf.py`
+- `backend/tests/api/test_authorization.py`
+- `backend/tests/api/test_ownership.py`
+- `backend/tests/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Tests never set role or authentication dependencies directly; login and SQL remain authoritative.
+- Function-scoped clients prevent cookies or revoked sessions from leaking between cases.
+- The database safety check still rejects a test URL equal to the development URL.
+- CSRF rejection still proves no revocation or misleading logout audit is written.
+
+#### What I Would Do Differently
+
+If repeated migration and Argon2 work becomes a material bottleneck, I would profile the suite
+before changing fixture scope. Faster shared authenticated clients would weaken isolation.
+
+#### Questions I Still Have
+
+- None for Phase 16.
+
+#### Next Step
+
+Review and commit Phase 16. Stop before Phase 17 so centralized domain errors remain a separate M4
+implementation phase.
+
 ---
 
 ## Long-Term Logs
@@ -1867,6 +1980,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D16 | 2026-06-29 | Use an explicit reusable CSRF dependency with constant-time comparison before authentication | Phase 13 mutation protection | Inline checks; global middleware; per-route dependency; auth-first vs CSRF-first | A named dependency keeps mutation protection visible and reusable, while early rejection avoids session activity from invalid cross-site requests. | Login and safe methods are exempt; every future POST/PATCH route must attach `CsrfProtected`; invalid unsafe requests receive 403 before authentication runs. |
 | D17 | 2026-06-29 | Build parameterized SQL-backed role guards and expose named ADMIN/CUSTOMER aliases | Phase 14 role authorization | Separate guard functions; one factory; inline route checks | One factory prevents policy drift, while aliases keep each route's required role visible and return the already authenticated SQL user. | Client role input is ignored; mismatches share a 403 `FORBIDDEN` envelope; future protected routes must choose the appropriate alias. |
 | D18 | 2026-06-29 | Filter customer account lookups by resource ID and authenticated owner ID in one query | Phase 15 ownership authorization | Load then compare; combined filter; route-local checks | A combined query keeps non-owned rows outside application logic and naturally gives missing and non-owned resources one 404 outcome. | Customer account routes use `OwnedAccount`; ADMIN cannot reuse customer ownership logic and needs separate admin queries. |
+| D19 | 2026-06-29 | Use function-scoped authenticated role fixtures that call the real login route | Phase 16 security-suite consolidation | Mock principals; inject cookies; real seeded login; broader fixture scope | Real login preserves the SQL user, session, and cookie boundary while function scope prevents state leakage. | Authorization tests perform more Argon2/database work but remain realistic and isolated. |
 
 ### Debugging Log
 

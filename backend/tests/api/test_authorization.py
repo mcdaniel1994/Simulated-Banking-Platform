@@ -1,12 +1,6 @@
-import pytest
 from app.api.deps import FORBIDDEN_ERROR, AdminUser, CustomerUser
 from app.main import app
-from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD, CUSTOMER_PASSWORD
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session as DatabaseSession
-from sqlalchemy.orm import sessionmaker
-
-CUSTOMER_EMAIL = "alex.customer@demo.bank.test"
 
 
 # Test-only probes exercise the dependency through FastAPI without adding premature product routes.
@@ -20,57 +14,25 @@ def customer_role_probe(user: CustomerUser) -> dict[str, str]:
     return {"role": user.role.value}
 
 
-@pytest.mark.parametrize(
-    ("email", "password", "path", "expected_role"),
-    [
-        (ADMIN_EMAIL, ADMIN_PASSWORD, "/api/test-only/admin-role", "ADMIN"),
-        (CUSTOMER_EMAIL, CUSTOMER_PASSWORD, "/api/test-only/customer-role", "CUSTOMER"),
-    ],
-    ids=["admin-allowed", "customer-allowed"],
-)
-def test_matching_sql_role_is_allowed(
-    email: str,
-    password: str,
-    path: str,
-    expected_role: str,
-    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
-) -> None:
-    client, _session_factory = login_test_context
-    login_response = client.post(
-        "/api/auth/login",
-        json={"email": email, "password": password},
-    )
-    assert login_response.status_code == 200
-
-    response = client.get(path, headers={"X-Role": "ADMIN"})
-
+def test_admin_sql_role_is_allowed(admin_client: TestClient) -> None:
+    response = admin_client.get("/api/test-only/admin-role", headers={"X-Role": "CUSTOMER"})
     assert response.status_code == 200
-    assert response.json() == {"role": expected_role}
+    assert response.json() == {"role": "ADMIN"}
 
 
-@pytest.mark.parametrize(
-    ("email", "password", "path", "spoofed_role"),
-    [
-        (CUSTOMER_EMAIL, CUSTOMER_PASSWORD, "/api/test-only/admin-role", "ADMIN"),
-        (ADMIN_EMAIL, ADMIN_PASSWORD, "/api/test-only/customer-role", "CUSTOMER"),
-    ],
-    ids=["customer-denied-admin", "admin-denied-customer"],
-)
-def test_mismatched_sql_role_is_forbidden_despite_client_role_input(
-    email: str,
-    password: str,
-    path: str,
-    spoofed_role: str,
-    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
-) -> None:
-    client, _session_factory = login_test_context
-    login_response = client.post(
-        "/api/auth/login",
-        json={"email": email, "password": password},
-    )
-    assert login_response.status_code == 200
+def test_customer_sql_role_is_allowed(customer_client: TestClient) -> None:
+    response = customer_client.get("/api/test-only/customer-role", headers={"X-Role": "ADMIN"})
+    assert response.status_code == 200
+    assert response.json() == {"role": "CUSTOMER"}
 
-    response = client.get(path, headers={"X-Role": spoofed_role})
 
+def test_customer_is_forbidden_from_admin_guard(customer_client: TestClient) -> None:
+    response = customer_client.get("/api/test-only/admin-role", headers={"X-Role": "ADMIN"})
+    assert response.status_code == 403
+    assert response.json() == FORBIDDEN_ERROR
+
+
+def test_admin_is_forbidden_from_customer_guard(admin_client: TestClient) -> None:
+    response = admin_client.get("/api/test-only/customer-role", headers={"X-Role": "CUSTOMER"})
     assert response.status_code == 403
     assert response.json() == FORBIDDEN_ERROR

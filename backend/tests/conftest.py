@@ -7,7 +7,7 @@ from alembic.config import Config
 from app.core.config import PROJECT_ROOT
 from app.db.session import get_db
 from app.main import app
-from app.seed import seed_database
+from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD, CUSTOMER_PASSWORD, seed_database
 from fastapi.testclient import TestClient
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +15,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+CUSTOMER_EMAIL = "alex.customer@demo.bank.test"
 
 
 class DatabaseTestSettings(BaseSettings):
@@ -127,3 +128,34 @@ def login_test_context(
                     """
                 )
             )
+
+
+def _login_test_client(client: TestClient, email: str, password: str) -> TestClient:
+    """Authenticate one seeded role while keeping credentials out of individual tests."""
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert response.status_code == 200
+    return client
+
+
+@pytest.fixture
+def admin_client(
+    login_test_context: tuple[TestClient, sessionmaker[Session]],
+) -> TestClient:
+    """Provide a request client authenticated as the seeded SQL administrator."""
+
+    client, _session_factory = login_test_context
+    return _login_test_client(client, ADMIN_EMAIL, ADMIN_PASSWORD)
+
+
+@pytest.fixture
+def customer_client(
+    login_test_context: tuple[TestClient, sessionmaker[Session]],
+) -> TestClient:
+    """Provide a request client authenticated as the seeded SQL customer."""
+
+    client, _session_factory = login_test_context
+    return _login_test_client(client, CUSTOMER_EMAIL, CUSTOMER_PASSWORD)

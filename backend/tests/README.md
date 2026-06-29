@@ -12,8 +12,10 @@ observable rules and outcomes rather than locking the project to internal implem
 | `api/` | HTTP contracts using a FastAPI test client | Login cookies, authorization responses, or error envelopes |
 | `db/` | PostgreSQL models, constraints, migrations, and concurrency behavior | Non-negative balance constraint or row locking |
 
-`conftest.py` will be added when shared fixtures are needed. It will eventually provide test
-database sessions, seeded users and accounts, authenticated clients, and cleanup between tests.
+`conftest.py` provides the isolated PostgreSQL engine and session factory, applies migrations,
+rebuilds deterministic seed data, overrides FastAPI's request database dependency, and cleans up
+after each API test. Its `admin_client` and `customer_client` fixtures authenticate through the
+real login route so authorization tests use SQL-backed roles rather than mocked principals.
 
 ## What Each Feature Should Test
 

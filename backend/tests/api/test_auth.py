@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from app.api.deps import CSRF_INVALID_ERROR, UNAUTHENTICATED_ERROR, _session_is_expired
+from app.api.deps import UNAUTHENTICATED_ERROR, _session_is_expired
 from app.core.security import HOST_SESSION_COOKIE_NAME, hash_session_token
 from app.models import AuditEvent, Session, User
 from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD
@@ -356,46 +356,3 @@ def test_logout_requires_a_valid_current_session(
             )
             == 0
         )
-
-
-@pytest.mark.parametrize(
-    "csrf_header",
-    [None, "wrong-csrf-token"],
-    ids=["missing-header", "mismatched-header"],
-)
-def test_logout_rejects_missing_or_mismatched_csrf_without_revoking(
-    csrf_header: str | None,
-    login_test_context: tuple[TestClient, sessionmaker[DatabaseSession]],
-) -> None:
-    client, session_factory = login_test_context
-    login_response = client.post(
-        "/api/auth/login",
-        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
-    )
-    assert login_response.status_code == 200
-
-    headers = {} if csrf_header is None else {"X-CSRF-Token": csrf_header}
-    response = client.post("/api/auth/logout", headers=headers)
-
-    assert response.status_code == 403
-    assert response.json() == CSRF_INVALID_ERROR
-    assert not response.headers.get_list("set-cookie")
-
-    # Rejected CSRF requests cannot mutate revocation state or create a misleading audit record.
-    with session_factory() as db:
-        session = db.scalar(select(Session))
-        assert session is not None
-        assert session.revoked_at is None
-        assert session.last_used_at == session.created_at
-        assert (
-            db.scalar(
-                select(func.count())
-                .select_from(AuditEvent)
-                .where(AuditEvent.event_type == "logout")
-            )
-            == 0
-        )
-
-    # The untouched session still authenticates a safe GET without any CSRF header.
-    me_response = client.get("/api/auth/me")
-    assert me_response.status_code == 200

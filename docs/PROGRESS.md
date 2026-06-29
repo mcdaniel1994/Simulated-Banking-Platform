@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M3 — Authentication & Authorization (in progress)
-- Current phase: Phase 15 — Ownership authorization (complete)
-- Current task: Review and commit the completed Phase 15 batch
-- Last completed: Phase 15 — Ownership authorization
-- Next action: Review and commit Phase 15; do not begin Phase 16 yet
+- Current milestone: M3 — Authentication & Authorization (complete)
+- Current phase: Phase 16 — Auth/authz/CSRF test suite (complete)
+- Current task: Review and commit the completed Phase 16 batch
+- Last completed: Phase 16 — Auth/authz/CSRF test suite
+- Next action: Review and commit Phase 16; do not begin Phase 17 yet
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -22,7 +22,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
-| M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phases 8–15 complete |
+| M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
@@ -381,33 +381,39 @@ Status: COMPLETE
 - [x] Single shared entry point for account-scoped routes
 - [x] Add ownership/IDOR API tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `53 passed, 1 existing warning`; focused ownership tests `4 passed`; Ruff format and lint
   checks passed; `alembic check` reported no model/schema drift.
 - Manual verification: Real Uvicorn test-probe flow completed customer login 200 → owned account
   200 → another customer's account 404 `NOT_FOUND` → missing account 404 `NOT_FOUND`.
-- Commit:
+- Commit: `8a1da23 feat(ownership): implement account ownership authorization with unified 404
+  response`
 - Notes: `get_owned_account` composes the CUSTOMER role guard with one SQL query filtered by both
   account ID and authenticated user ID. `OwnedAccount` is the single entry point for future
   customer account-scoped routes. ADMIN receives 403 and cannot reuse customer ownership logic.
 
 ### Phase 16 — Auth/authz/CSRF test suite
-Status: NOT STARTED
-- [ ] Fixtures (test DB, seeded users, role clients)
-- [ ] Login/invalid/inactive/expired/revoked tests
-- [ ] Logout-revokes test
-- [ ] CSRF reject/accept tests
-- [ ] Role 403 + ownership 404 tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Fixtures (test DB, seeded users, role clients)
+- [x] Login/invalid/inactive/expired/revoked tests
+- [x] Logout-revokes test
+- [x] CSRF reject/accept tests
+- [x] Role 403 + ownership 404 tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: consolidated security suite `23 passed, 1 existing warning`; full suite `53 passed,
+  1 existing warning`; Ruff format and lint checks passed; `alembic check` reported no
+  model/schema drift.
+- Manual verification: Ran the auth, CSRF, role-authorization, and ownership API modules together;
+  every SPEC §14 authentication/CSRF/authorization scenario passed.
 - Commit:
-- Notes:
+- Notes: Shared `admin_client` and `customer_client` fixtures authenticate seeded SQL users through
+  the real login route and remain isolated by the per-test database reset. Focused CSRF cases now
+  live in `test_csrf.py`; no application behavior changed.
 
 ---
 
