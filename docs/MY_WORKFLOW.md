@@ -91,6 +91,142 @@ Copy this section when I begin a phase.
 
 ---
 
+## Phase Entries
+
+### Entry — 2026-06-29 — Phase 1: Repository Structure and Tooling
+
+#### What I Worked On
+
+I created the initial backend package structure and separated the application into API, core,
+database, model, repository, schema, and service packages. I also created matching test areas for
+unit, service, API, and database tests.
+
+I chose uv for dependency and environment management, created a Python 3.12 virtual environment,
+and separated runtime dependencies from development dependencies in `pyproject.toml`. The exact
+resolved dependency versions are stored in `uv.lock`.
+
+I configured Ruff to handle both formatting and linting, created the root `.gitignore`, and added
+three backend guides explaining how the backend, application packages, and test suite fit together.
+
+#### What I Expected to Happen
+
+I expected to finish this phase with an importable but intentionally empty backend package, a
+reproducible environment, and development tools that could run before any application behavior
+existed.
+
+#### What Actually Happened
+
+The package imported successfully, all dependency imports worked, Ruff confirmed that all 14
+Python files were formatted and free of configured lint violations, and pytest collected the empty
+test suite without an import or collection error.
+
+Pytest returned exit code `5`, which initially looks like a failure but specifically means that no
+tests were collected. That is expected here because the first behavior and integration test belong
+to Phase 2.
+
+#### Concepts I Learned
+
+- A virtual environment isolates this project's Python interpreter and installed packages from the
+  rest of my machine.
+- `pyproject.toml` declares the direct dependencies and tool configuration, while `uv.lock`
+  captures the exact resolved versions for reproducible installs.
+- `__init__.py` makes the package boundaries explicit and allows Python to import the application.
+- Ruff can provide both formatting and linting, so I do not need to add a second formatter without
+  a specific reason.
+- A `.gitignore` protects the repository from local environments, caches, secrets, and generated
+  artifacts.
+- Package boundaries make the future request flow easier to follow before implementation begins.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Python dependency workflow | uv; pip; Poetry | uv | It gives me a fast environment workflow, standard project metadata, and a reproducible lockfile. | Contributors need uv installed. |
+| Python version | System Python 3.14; installed Python 3.12 | Python 3.12 | I wanted an explicit project interpreter rather than accidentally inheriting the newest system interpreter. | I must intentionally upgrade the project version later. |
+| Formatting and linting | Ruff; Black plus another linter | Ruff | One tool covers the current formatting and linting needs without duplicated configuration. | I am adopting Ruff's formatting behavior. |
+| Backend documentation | README in every package; one guide; three focused guides | Guides in `backend/`, `backend/app/`, and `backend/tests/` | Three guides explain the connections without creating a document in every small package. | The guides must be updated as the architecture evolves. |
+
+#### Problems I Encountered
+
+- Codex initially could not access uv's local cache because of its filesystem sandbox.
+- My zsh `python` alias caused `which python` to show the alias instead of the virtual-environment
+  executable.
+- Pytest returned a nonzero exit code even though collection contained no errors.
+
+#### How I Diagnosed Them
+
+- I read the uv error and confirmed that it referred to cache access rather than project metadata.
+- I inspected `sys.executable` and `sys.prefix` from inside Python instead of relying on the shell
+  alias.
+- I checked pytest's output and exit-code meaning to distinguish an empty suite from a collection
+  failure.
+
+#### How I Solved Them
+
+- I approved the narrowly scoped uv cache access and reran the commands.
+- I verified that Python resolved to `backend/.venv/bin/python` and used Python 3.12.13.
+- I accepted pytest exit code `5` for this phase and did not add a meaningless placeholder test.
+
+#### Tests I Added
+
+I did not add behavior tests because the application has no behavior yet. I verified that pytest
+can discover the test structure without import or collection errors.
+
+#### Commands I Used
+
+```bash
+mkdir -p backend/app/{api/routes,core,db,models,repositories,schemas,services}
+mkdir -p backend/tests/{api,db,service,unit}
+uv venv backend/.venv --python 3.12
+uv init --bare --name simulated-banking-backend --python 3.12 backend
+uv add --project backend fastapi uvicorn sqlalchemy "psycopg[binary]" alembic pydantic-settings argon2-cffi
+uv add --project backend --dev pytest httpx ruff
+cd backend
+uv run python -c "import app"
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest --collect-only -q
+cd ..
+```
+
+#### Files I Changed
+
+- `.gitignore`
+- `backend/pyproject.toml`
+- `backend/uv.lock`
+- `backend/README.md`
+- `backend/app/README.md`
+- `backend/tests/README.md`
+- Empty package files under `backend/app/` and `backend/tests/`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Real `.env` files and local virtual environments are ignored by Git.
+- `.env.example` remains eligible for version control when it is added in Phase 3.
+- Dependency versions are reproducible through the committed lockfile.
+- Runtime and development dependencies are kept in separate groups.
+- No secrets or application credentials were added.
+
+#### What I Would Do Differently
+
+I would initialize Git before the Phase 0 documentation commit requirement appears in the plan.
+The current plan placed Git initialization in Phase 1 even though Phase 0 also expected a commit.
+Initializing it during Phase 0 resolved the ordering conflict.
+
+#### Questions I Still Have
+
+- I still need to confirm the existing D5 decision about synchronous versus asynchronous
+  SQLAlchemy before the database work begins.
+
+#### Next Step
+
+Review this entry, update the Phase 1 completion record, and commit the finished foundation. After
+that commit is verified, begin Phase 2 with only the FastAPI application and health endpoint.
+
+---
+
 ## Long-Term Logs
 
 ### Architecture Decision Log

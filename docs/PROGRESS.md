@@ -9,9 +9,9 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M1 — Repo & Backend Foundation
 - Current phase: Phase 1 — Repository structure & tooling
-- Current task: Create the backend package skeleton directories
+- Current task: Review and commit the completed Phase 1 foundation
 - Last completed: Phase 0 — Confirm open decisions
-- Next action: Create only the backend package skeleton
+- Next action: Commit Phase 1 after reviewing its documentation
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -62,21 +62,24 @@ Completion evidence:
 ### Phase 1 — Repository structure & tooling
 Status: IN PROGRESS
 - [x] Select uv for environment and dependency management
-- [ ] Create backend package skeleton directories
-- [ ] Create and activate a virtual environment
-- [ ] Pin core dependencies
-- [ ] Add formatter + linter config and run them
-- [ ] Add `.gitignore` (ignore `.env`, caches, build artifacts)
-- [ ] Initialize git; first commit
-- [ ] Add tests (confirm pytest collects cleanly)
-- [ ] Record decisions in `MY_WORKFLOW.md`
+- [x] Create backend package skeleton directories
+- [x] Create and activate a Python 3.12 virtual environment
+- [x] Pin core dependencies with `pyproject.toml` and `uv.lock`
+- [x] Add Ruff formatter + linter configuration and run both checks
+- [x] Add `.gitignore` (ignore `.env`, caches, build artifacts)
+- [x] Initialize git; first commit (completed during Phase 0)
+- [x] Confirm pytest collects zero tests without import or collection errors
+- [x] Add backend, application-package, and test-suite guides
+- [x] Record decisions and learning notes in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `pytest --collect-only` found zero tests without collection errors (expected exit code 5).
+- Manual verification: `import app` succeeded; all dependency imports succeeded; Ruff reported 14
+  files formatted and all lint checks passing; `.venv` and secret env files are ignored.
+- Commit: Pending — `chore: initialize backend structure and tooling`
+- Notes: Runtime and development dependencies are separated; exact versions are stored in
+  `uv.lock`. No application behavior exists yet.
 
 ### Phase 2 — FastAPI app + health endpoint
 Status: NOT STARTED
