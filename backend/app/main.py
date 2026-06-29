@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.routes.accounts import router as accounts_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.errors import (
@@ -29,3 +30,6 @@ app.include_router(health_router, prefix="/api")
 
 # Authentication joins the same public namespace while retaining its own focused router module.
 app.include_router(auth_router, prefix="/api")
+
+# Customer account reads reuse the shared role and ownership dependencies.
+app.include_router(accounts_router, prefix="/api")

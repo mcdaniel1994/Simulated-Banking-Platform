@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M4 — Banking Domain (in progress)
-- Current phase: Phase 17 — Domain errors and common envelope (complete)
-- Current task: Review and commit the completed Phase 17 batch
-- Last completed: Phase 17 — Domain errors and common envelope
-- Next action: Review and commit Phase 17; do not begin Phase 18 yet
+- Current phase: Phase 18 — Account read operations (complete)
+- Current task: Review and commit the completed Phase 18 batch
+- Last completed: Phase 18 — Account read operations
+- Next action: Review and commit Phase 18; do not begin Phase 19 yet
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -23,7 +23,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
-| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phase 17 complete |
+| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–18 complete |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
@@ -429,7 +429,7 @@ Status: COMPLETE
 - [x] Retrofit auth/CSRF routes to the envelope
 - [x] Add envelope + no-leak tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused error tests `13 passed`; combined security/error tests `36 passed`; full suite
@@ -438,26 +438,31 @@ Completion evidence:
 - Manual verification: Real Uvicorn flow returned 422 `VALIDATION_ERROR` without echoing a rejected
   password and 500 `INTERNAL_ERROR` for a forced failure. Response and server logs omitted planted
   SQL/token text; the safe log contained only exception type, method, and path.
-- Commit:
+- Commit: `86a681a feat(errors): add domain exceptions and common error envelope handler`
 - Notes: Expected domain failures share one handler; request validation and framework HTTP errors
   are normalized separately into the same envelope. Unexpected exceptions are caught by
   application middleware before Uvicorn can print raw exception messages. Programmatic Alembic
   runs preserve existing application loggers.
 
 ### Phase 18 — Account read operations
-Status: NOT STARTED
-- [ ] Account response schema (money as string)
-- [ ] Service: list owned accounts; get one owned account
-- [ ] Thin routes; 404 on non-owned
-- [ ] Add account read API tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Account response schema (money as string)
+- [x] Service: list owned accounts; get one owned account
+- [x] Thin routes; 404 on non-owned
+- [x] Add account read API tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused account API tests `5 passed`; full suite `71 passed, 1 existing warning`; Ruff
+  format and lint checks passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn flow completed customer login 200 → account list 200 with two
+  owned accounts and string balances → owned detail 200 → another customer's detail 404
+  `NOT_FOUND`.
 - Commit:
-- Notes:
+- Notes: `AccountResponse` exposes no owner ID and converts `Decimal` directly to a two-decimal
+  string. The list service filters by authenticated customer ID; detail reuses `OwnedAccount`
+  without a duplicate query. ADMIN receives 403 from both customer routes.
 
 ### Phase 19 — Transaction history (paginated)
 Status: NOT STARTED

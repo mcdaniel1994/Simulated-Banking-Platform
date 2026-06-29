@@ -2087,6 +2087,118 @@ response tests cannot prove what Uvicorn logs after the response is sent.
 Review and commit Phase 17. Stop before Phase 18 so account reads and money serialization remain a
 separate bounded phase.
 
+### Entry — 2026-06-29 — Phase 18: Account Read Operations
+
+#### What I Worked On
+
+I added `GET /api/accounts` and `GET /api/accounts/{account_id}` for authenticated customers.
+`list_owned_accounts` filters the SQL query by the authenticated customer's ID, while account
+detail reuses the existing `OwnedAccount` dependency instead of performing a second lookup.
+
+I also created `AccountResponse`, which exposes safe account fields and converts SQLAlchemy
+`Decimal` balances directly to two-decimal strings.
+
+#### What I Expected to Happen
+
+I expected a customer to list only their two seeded accounts, retrieve an owned account, receive
+404 for another customer's account, and see balances represented as JSON strings. ADMIN should be
+rejected because these are customer routes.
+
+#### What Actually Happened
+
+Five focused API tests passed. They proved exact account membership and order, two-decimal string
+balances, safe response fields, owned detail access, cross-customer 404 behavior, ADMIN 403
+behavior, and a string balance in OpenAPI. The full suite passed 71 tests with the existing
+TestClient warning. Ruff passed, and Alembic reported no drift.
+
+A real Uvicorn flow returned login 200, account list 200 with two accounts and a string balance,
+owned detail 200, and another customer's account 404 `NOT_FOUND`.
+
+#### Concepts I Learned
+
+- JSON numbers cannot guarantee decimal money semantics across JavaScript clients, so the API
+  contract uses strings.
+- Converting `Decimal` directly to a formatted string avoids binary floating-point entirely.
+- A response schema is a security boundary because omitted ORM fields such as `user_id` and
+  relationships cannot leak accidentally.
+- A route can stay thin by returning an already-authorized dependency result rather than inventing
+  a pass-through service or repeating the query.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Balance schema type | JSON number; Decimal field with serializer; string field with pre-validation | String field converted from `Decimal` | Runtime JSON and OpenAPI both clearly promise strings, and no float enters the path. | Clients must parse money with decimal-safe logic. |
+| Account detail flow | Re-query in service; pass-through service; return `OwnedAccount` | Return `OwnedAccount` | Phase 15 already performs the complete ID-and-owner SQL lookup. | Detail reads use a dependency while list reads use a service. |
+| List ordering | Database default; account number; ID | Account ID | Deterministic ordering keeps API output and tests stable without adding a new product decision. | A future UI may request a different explicit sort. |
+
+#### Problems I Encountered
+
+- Ruff required one mechanical formatting adjustment in the new account service.
+
+#### How I Diagnosed Them
+
+- The format check named the exact file before tests ran.
+
+#### How I Solved Them
+
+- I applied Ruff's formatter to that file and reran format, lint, and tests.
+
+#### Tests I Added
+
+- The account list contains only the authenticated customer's seeded accounts.
+- Balances are exact two-decimal JSON strings and OpenAPI declares a string.
+- Response objects omit `user_id` and unrelated ORM state.
+- An owned detail request succeeds.
+- Another customer's account returns 404 `NOT_FOUND`.
+- ADMIN receives 403 from both customer account routes.
+
+Result: `71 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest tests/api/test_accounts.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8018
+```
+
+#### Files I Changed
+
+- `backend/app/schemas/account.py`
+- `backend/app/services/account_service.py`
+- `backend/app/api/routes/accounts.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_accounts.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- List queries filter by the SQL-authenticated customer ID.
+- Detail queries use the shared `OwnedAccount` IDOR boundary.
+- ADMIN cannot reuse customer account routes.
+- Response validation prevents ownership identifiers and relationships from leaking.
+- Money never passes through floating point.
+
+#### What I Would Do Differently
+
+If account list ordering becomes a product requirement, I would specify it explicitly rather than
+relying on the current ID ordering chosen for deterministic behavior.
+
+#### Questions I Still Have
+
+- Phase 19 must choose the default and maximum transaction page size before adding history reads.
+
+#### Next Step
+
+Review and commit Phase 18. Stop before Phase 19 so pagination and transaction-history ordering
+remain a separate bounded phase.
+
 ---
 
 ## Long-Term Logs
@@ -2118,6 +2230,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D18 | 2026-06-29 | Filter customer account lookups by resource ID and authenticated owner ID in one query | Phase 15 ownership authorization | Load then compare; combined filter; route-local checks | A combined query keeps non-owned rows outside application logic and naturally gives missing and non-owned resources one 404 outcome. | Customer account routes use `OwnedAccount`; ADMIN cannot reuse customer ownership logic and needs separate admin queries. |
 | D19 | 2026-06-29 | Use function-scoped authenticated role fixtures that call the real login route | Phase 16 security-suite consolidation | Mock principals; inject cookies; real seeded login; broader fixture scope | Real login preserves the SQL user, session, and cookie boundary while function scope prevents state leakage. | Authorization tests perform more Argon2/database work but remain realistic and isolated. |
 | D20 | 2026-06-29 | Centralize typed domain errors and catch unexpected failures before server traceback logging | Phase 17 error boundary | Route-local responses; per-error handlers; outer exception handler; application middleware | One domain handler keeps contracts stable, while middleware prevents Uvicorn from logging raw secret-bearing exception messages. | Validation fields are sanitized; internal logs retain only exception type, method, and path until structured logging hardening. |
+| D21 | 2026-06-29 | Publish account balances as two-decimal strings converted directly from `Decimal` | Phase 18 account reads | JSON number; serialized Decimal; schema-level string | A string contract is exact across JSON and JavaScript, and the schema advertises the representation clearly. | Frontend aggregation must use decimal-safe parsing; `user_id` remains omitted from customer responses. |
 
 ### Debugging Log
 
