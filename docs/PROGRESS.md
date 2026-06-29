@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M4 — Banking Domain (in progress)
-- Current phase: Phase 22 — Transfer (complete)
-- Current task: Commit Phase 22, then begin Phase 23
-- Last completed: Phase 22 — Transfer
-- Next action: Commit Phase 22, then implement Phase 23 verification
+- Current milestone: M4 — Banking Domain (complete)
+- Current phase: Phase 23 — Reconciliation and concurrency (complete)
+- Current task: Commit Phase 23, then begin M5
+- Last completed: Phase 23 — Reconciliation and concurrency
+- Next action: Commit Phase 23, then implement Phase 24 admin dashboard
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -23,7 +23,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
-| M4 — Banking Domain | IN PROGRESS | 2026-06-29 |  | Phases 17–22 complete |
+| M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
@@ -535,31 +535,35 @@ Status: COMPLETE
 - [x] Emit transfer audit row (D2)
 - [x] Add success/same-account/not-owned/insufficient/rollback tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused transfer tests `7 passed`; full suite `100 passed, 1 existing warning`; Ruff
   passed; `alembic check` reported no model/schema drift.
 - Manual verification: Real Uvicorn transfer returned 201, moved exactly `1.00` between owned
   accounts, persisted a COMPLETED parent and two legs, and the owned detail returned 200.
-- Commit:
+- Commit: `a68f63c feat(transfers): add atomic two-account transfer with rollback safety`
 - Notes: Both rows lock in ascending ID order. An induced post-flush failure proved both balances,
   the parent, legs, and audit roll back. Non-owned either side returns 404.
 
 ### Phase 23 — Reconciliation & concurrency verification
-Status: NOT STARTED
-- [ ] Reconciliation helper (signed sum vs balance)
-- [ ] Reconciliation test (seeded + mutated accounts)
-- [ ] Concurrency test (two parallel withdrawals, no overdraw)
-- [ ] Assert `CHECK (balance >= 0)` under the race
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Reconciliation helper (signed sum vs balance)
+- [x] Reconciliation test (seeded + mutated accounts)
+- [x] Concurrency test (two parallel withdrawals, no overdraw)
+- [x] Assert `CHECK (balance >= 0)` under the race
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused reconciliation/concurrency tests `2 passed`; full suite `102 passed, 1 existing
+  warning`; Ruff passed; `alembic check` reported no model/schema drift.
+- Manual verification: Reconciliation helper checked all four development accounts after real
+  deposit and transfer smoke mutations; every stored balance matched signed history.
 - Commit:
-- Notes:
+- Notes: Reconciliation stays test-only for MVP. Two independent PostgreSQL sessions concurrently
+  withdrew `80.00` from `100.00`; one succeeded, one failed, final balance was `20.00`, and exactly
+  one history/audit pair was added.
 
 ---
 

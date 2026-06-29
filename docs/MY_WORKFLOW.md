@@ -2460,6 +2460,47 @@ Result: `100 passed, 1 existing warning`.
 
 Commit Phase 22 and prove reconciliation and concurrent-overdraw safety in Phase 23.
 
+### Entry — 2026-06-29 — Phase 23: Reconciliation and Concurrency
+
+#### What I Worked On
+
+I added a test-only reconciliation helper that computes signed history and compares it with the
+stored balance. I also added a real PostgreSQL concurrency test using two independent sessions and
+simultaneous withdrawals.
+
+#### What Actually Happened
+
+Reconciliation passed after fresh deposit, withdrawal, and transfer mutations. Two simultaneous
+`80.00` withdrawals against `100.00` produced one success and one insufficient-funds result; the
+final balance was `20.00` with one new history/audit pair. All 102 tests passed. The development
+database's four accounts also reconciled after the real-server money smokes.
+
+#### Concepts I Learned
+
+- The transaction log is the source of truth and the balance is a cache that can be verified.
+- Concurrency correctness requires separate sessions/connections; sequential tests cannot prove
+  row-lock behavior.
+- The service rule gives the useful error while the database nonnegative check is the backstop.
+
+#### Tests I Added
+
+- Reconciliation across seeded and freshly mutated accounts.
+- Parallel withdrawals proving no lost update or overdraft.
+
+Result: `102 passed, 1 existing warning`.
+
+#### Files I Changed
+
+- `backend/app/services/reconciliation.py`
+- `backend/tests/db/test_reconciliation.py`
+- `backend/tests/db/test_concurrency.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 23 and begin M5 with the admin dashboard.
+
 ---
 
 ## Long-Term Logs
@@ -2496,6 +2537,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D23 | 2026-06-29 | Require decimal-string money input and re-lock owned accounts inside mutation services | Phase 20 deposit | JSON number vs string; mutate dependency row vs locked re-query | Exact strings prevent float drift; the locked query makes the balance read concurrency-safe. | Money requests reject floats and excess precision; mutations perform a second ownership-filtered lookup. |
 | D24 | 2026-06-29 | Check withdrawal funds while holding the account row lock | Phase 21 withdrawal | Pre-lock validation; locked validation; database constraint only | Locked validation prevents concurrent requests from approving against one stale balance while returning a useful domain error. | Overdraw returns `INSUFFICIENT_FUNDS`; the database check remains a final backstop. |
 | D25 | 2026-06-29 | Lock transfer accounts in ascending ID order and test rollback after flush | Phase 22 transfer | Request order; sorted order; shallow pre-flush failure; post-flush failure | Sorted locks avoid deadlocks; post-flush failure proves database atomicity after statements execute. | Transfer parent, balances, two legs, and audit share one commit and fully roll back together. |
+| D26 | 2026-06-29 | Keep reconciliation test-only for the MVP and verify concurrency with independent PostgreSQL sessions | Phase 23 integrity verification | Admin endpoint; helper plus DB tests; sequential simulation | The MVP requires proof, not an admin feature; independent sessions exercise real row locks. | M4 closes with reconciliation and no-overdraft evidence without extension scope. |
 
 ### Debugging Log
 
