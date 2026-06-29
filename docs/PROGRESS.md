@@ -9,9 +9,9 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M1 — Repo & Backend Foundation (complete)
 - Current phase: Phase 3 — Configuration & environment variables (complete)
-- Current task: M1 foundation milestone closed
+- Current task: D5 resolved — synchronous SQLAlchemy selected
 - Last completed: Phase 3 — Configuration & environment variables
-- Next action: Resolve D5 (sync vs async SQLAlchemy) before Phase 4
+- Next action: Begin Phase 4 — SQLAlchemy engine, session, base, and DB dependency
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -769,6 +769,7 @@ Status: NOT STARTED
 | D2 | AuditEvent in MVP vs defer | Include minimal | Ph5/6, money/admin phases, Ph27 | Yes — include minimal |
 | D3 | Reverse proxy Caddy vs nginx | Caddy (auto-TLS) | Ph37 | Yes — nginx |
 | D4 | Repository-layer depth | Lightweight helpers | Ph18–26 layout | Yes — lightweight helpers |
+| D5 | Sync vs async SQLAlchemy | Sync | Ph4 onward | Yes — synchronous SQLAlchemy |
 
 ## Deferred work
 | Item | From phase | Reason | Revisit when |
