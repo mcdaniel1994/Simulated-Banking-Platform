@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -14,6 +15,8 @@ from app.core.security import (
 )
 from app.errors import UnauthenticatedError
 from app.models import AuditEvent, Session, User
+
+logger = logging.getLogger(__name__)
 
 # Unknown emails still perform one real Argon2 verification to reduce user-enumeration timing clues.
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-user-password")
@@ -66,6 +69,10 @@ def login(
     # Unknown, wrong-password, and inactive-user paths deliberately share one public failure.
     if user is None or not password_matches or not user.is_active:
         _commit_login_failure(db, user)
+        logger.info(
+            "login_failure user_id=%s",
+            user.id if user is not None else "unknown",
+        )
         raise UnauthenticatedError(message="Invalid email or password")
 
     # One timestamp anchors creation, idle activity, absolute expiry, and the success audit.
@@ -110,6 +117,7 @@ def login(
         db.rollback()
         raise
 
+    logger.info("login_success user_id=%s session_id=%s", user.id, session.id)
     return LoginResult(raw_session_token=raw_token, expires_at=expires_at)
 
 
@@ -136,3 +144,5 @@ def logout(db: DatabaseSession, *, user: User, session: Session) -> None:
     except Exception:
         db.rollback()
         raise
+
+    logger.info("logout user_id=%s session_id=%s", user.id, session.id)

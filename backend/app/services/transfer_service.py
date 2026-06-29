@@ -22,6 +22,7 @@ from app.models import (
     User,
 )
 from app.schemas.money import MAX_MONEY_AMOUNT
+from app.services.audit_service import record_permission_denied
 
 
 def transfer_money(
@@ -51,6 +52,14 @@ def transfer_money(
             )
         )
         if len(locked_accounts) != 2:
+            db.rollback()
+            record_permission_denied(
+                db,
+                actor=customer,
+                entity_type="transfer_accounts",
+                entity_id=f"{source_account_id}:{destination_account_id}",
+                metadata={"reason": "missing_or_not_owned"},
+            )
             raise NotFoundError
 
         accounts_by_id = {account.id: account for account in locked_accounts}
@@ -139,5 +148,12 @@ def get_owned_transfer(
         )
     )
     if transfer is None:
+        record_permission_denied(
+            db,
+            actor=customer,
+            entity_type="transfer",
+            entity_id=str(transfer_id),
+            metadata={"reason": "missing_or_not_owned"},
+        )
         raise NotFoundError
     return transfer

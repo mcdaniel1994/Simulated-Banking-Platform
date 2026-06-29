@@ -102,5 +102,8 @@ transaction history.
 
 ## Current State
 
-Phase 7 adds deterministic, idempotent demonstration users, accounts, transactions, and internal
-transfers. The seed uses the shared Argon2id primitive completed early from Phase 8.
+The backend has reached the Phase 27 BACKEND-COMPLETE checkpoint. Authentication, server-side
+sessions, CSRF, role and ownership authorization, account and transaction reads, atomic deposits,
+withdrawals and transfers, reconciliation/concurrency verification, and administrator management
+routes are implemented. The full API contract is available through OpenAPI/Swagger and is frozen
+before frontend work begins.

@@ -14,6 +14,7 @@ from app.core.security import get_session_cookie_name, hash_session_token
 from app.db.session import get_db
 from app.errors import CsrfInvalidError, ForbiddenError, NotFoundError, UnauthenticatedError
 from app.models import Account, Session, User, UserRole
+from app.services.audit_service import record_permission_denied
 
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -104,12 +105,22 @@ def get_current_user(
     return principal.user
 
 
-def require_role(required_role: UserRole) -> Callable[[User], User]:
+def require_role(required_role: UserRole) -> Callable[..., User]:
     """Build a reusable guard that trusts only the authenticated SQL user."""
 
-    def role_dependency(user: Annotated[User, Depends(get_current_user)]) -> User:
+    def role_dependency(
+        user: Annotated[User, Depends(get_current_user)],
+        db: Annotated[DatabaseSession, Depends(get_db)],
+    ) -> User:
         # The role arrived through the database-backed session lookup, never request input.
         if user.role is not required_role:
+            record_permission_denied(
+                db,
+                actor=user,
+                entity_type="role",
+                entity_id=required_role.value,
+                metadata={"actual_role": user.role.value},
+            )
             raise ForbiddenError
         return user
 
@@ -140,6 +151,13 @@ def get_owned_account(
         )
     )
     if account is None:
+        record_permission_denied(
+            db,
+            actor=customer,
+            entity_type="account",
+            entity_id=str(account_id),
+            metadata={"reason": "missing_or_not_owned"},
+        )
         raise NotFoundError
     return account
 

@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M5 — Admin Backend (complete)
-- Current phase: Phase 26 — Status controls (complete)
-- Current task: Commit Phase 26, then begin backend finalization
-- Last completed: Phase 26 — Status controls
-- Next action: Commit Phase 26, then execute Phase 27 checkpoint
+- Current milestone: M6 — Backend Finalization (complete)
+- Current phase: Phase 27 — Backend finalization (complete)
+- Current task: BACKEND-COMPLETE checkpoint satisfied
+- Last completed: Phase 27 — Error consistency, redaction, audit wiring, full backend pass
+- Next action: Stop at the checkpoint; begin Phase 28 only with explicit authorization
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -25,7 +25,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
 | M5 — Admin Backend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 24–26 complete |
-| M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
+| M6 — Backend Finalization (BACKEND-COMPLETE) | COMPLETE | 2026-06-29 | 2026-06-29 | Checkpoint satisfied |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
 | M8 — Customer Frontend | NOT STARTED |  |  |  |
 | M9 — Admin Frontend | NOT STARTED |  |  |  |
@@ -612,7 +612,7 @@ Status: COMPLETE
 - [x] Assert deactivated user can't auth; frozen rejects money ops
 - [x] Add deactivation-revoke + freeze + admins-not-owners tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused status-control tests `5 passed`; full suite `114 passed, 1 existing warning`;
@@ -620,7 +620,7 @@ Completion evidence:
 - Manual verification: Real Uvicorn deactivation killed the live customer session (401);
   activation restored login; freeze blocked deposit with `INACTIVE_ACCOUNT`; unfreeze restored
   ACTIVE.
-- Commit:
+- Commit: `6646e98 feat(admin): add user activation and account freeze with session revocation`
 - Notes: Deactivation, bulk session revocation, and audit share one commit. Freeze/unfreeze and
   audit share one commit. CLOSED is not accepted by this transition endpoint, and ADMIN remains
   unable to perform customer money operations.
@@ -630,22 +630,29 @@ Completion evidence:
 ## M6 — Backend Finalization `[SUBMISSION]` — BACKEND-COMPLETE CHECKPOINT
 
 ### Phase 27 — Error consistency, redaction, audit wiring, full backend pass
-Status: NOT STARTED
-- [ ] Audit all routes: envelope + money-strings + CSRF
-- [ ] Verify log redaction; mask account numbers
-- [ ] Confirm AuditEvent rows for all §10 MVP events (or record deferral)
-- [ ] Reseed; run full backend suite
-- [ ] Swagger/curl walkthrough as customer and admin
-- [ ] Add redaction test
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Audit all routes: envelope + money-strings + CSRF
+- [x] Verify log redaction; mask account numbers
+- [x] Confirm AuditEvent rows for all §10 MVP events (or record deferral)
+- [x] Reseed; run full backend suite
+- [x] Swagger/curl walkthrough as customer and admin
+- [x] Add redaction test
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
-- [ ] **CHECKPOINT:** backend suite green + walkthrough succeeds before any frontend work
+- [x] **CHECKPOINT:** backend suite green + walkthrough succeeds before any frontend work
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused audit/redaction/error tests `15 passed`; full suite `116 passed, 1 existing
+  warning`; Ruff format/lint passed; `alembic check` reported no model/schema drift.
+- Manual verification: Reseed completed. Real Uvicorn/OpenAPI walkthrough covered all 17 production
+  paths as customer and admin: login/current user, accounts, both history feeds, deposit,
+  withdrawal, transfer/detail, logout/revoked reuse, dashboard, customer list/detail, status
+  controls, customer/admin denials, CSRF rejection, reconciliation, and all required audit events.
 - Commit:
-- Notes:
+- Notes: All 11 SPEC §10 MVP audit event types are wired, including permission denial. Safe stdout
+  logs include only event names and numeric identifiers; redaction tests exclude passwords, raw
+  cookies, account numbers, sensitive header names, SQL, tokens, and exception details. The one
+  documented FastAPI TestClient/httpx deprecation warning remains technical debt.
 
 ---
 

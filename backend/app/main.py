@@ -1,3 +1,6 @@
+import logging
+import sys
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -16,6 +19,14 @@ from app.errors import (
     http_exception_handler,
     request_validation_exception_handler,
 )
+
+# Emit intentionally sanitized application audit logs even when Uvicorn filters the root logger.
+app_logger = logging.getLogger("app")
+app_logger.setLevel(logging.INFO)
+if not app_logger.handlers:
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setFormatter(logging.Formatter("%(levelname)s [%(name)s] %(message)s"))
+    app_logger.addHandler(stdout_handler)
 
 # Create the central ASGI application that Uvicorn will serve.
 app = FastAPI(title="Simulated Banking API")

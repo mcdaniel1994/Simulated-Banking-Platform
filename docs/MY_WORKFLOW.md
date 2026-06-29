@@ -2606,6 +2606,97 @@ unfreeze restored ACTIVE.
 
 Commit Phase 26 and perform the Phase 27 BACKEND-COMPLETE audit and walkthrough.
 
+### Entry — 2026-06-29 — Phase 27: BACKEND-COMPLETE Finalization
+
+#### What I Worked On
+
+I audited every production route for role/ownership enforcement, CSRF on mutations, common error
+envelopes, and string money. I added shared permission-denied auditing at role, account, and
+transfer ownership boundaries, plus sanitized stdout auth/authorization logs.
+
+I added an end-to-end audit-event test covering every required SPEC §10 event and a redaction test
+with planted password, cookie, account-number, and header-name values. I reseeded development,
+walked every OpenAPI route as both roles, and reconciled all accounts after real mutations.
+
+#### What I Expected to Happen
+
+The backend checkpoint required a green suite, complete error and money contracts, CSRF on every
+mutation, all required audit events, no sensitive response/log leakage, and a successful real
+customer/admin walkthrough.
+
+#### What Actually Happened
+
+All 116 tests passed with the one existing TestClient warning, Ruff passed, and Alembic reported no
+drift. The walkthrough covered all 17 production paths and all authorization/CSRF boundaries.
+Reconciliation passed after deposit, withdrawal, and transfer. The final required `login_failure`
+event was deliberately generated and the complete 11-event audit set was confirmed.
+
+The first live logging check showed INFO auth logs were filtered by Uvicorn's inherited logger
+configuration. An explicit duplicate-safe stdout handler for the `app` namespace made sanitized
+login success/failure/logout logs observable without exposing request data.
+
+#### Concepts I Learned
+
+- Security verification must cover responses, persistence, and real server logs; any one view can
+  miss a leak or missing event.
+- Permission-denied auditing belongs at shared authorization boundaries so future routes inherit
+  it automatically.
+- Logging redaction is strongest when sensitive values are never passed to the logger.
+- A backend contract is ready to freeze only after real role-based walkthroughs match automated
+  tests and OpenAPI.
+
+#### Decisions I Made
+
+| Decision | Choice | Reason | Consequence |
+|---|---|---|---|
+| Permission auditing | Shared role/ownership boundaries | Prevent route-by-route omissions | Denied role and IDOR attempts write one safe audit row |
+| Auth logs | Event name plus numeric IDs only | Useful operational evidence without credentials or tokens | Deeper correlation/structured logging remains hardening |
+| D2 final | All required MVP audit rows included | The schema and services already support them | No audit-event deferral remains |
+
+#### Tests I Added
+
+- End-to-end presence of all 11 required audit event types.
+- Auth and authorization log/response redaction for planted sensitive values.
+- Existing unexpected-error redaction remains enforced.
+
+Result: `116 passed, 1 existing warning`.
+
+#### Manual Walkthrough
+
+- Public: health and complete OpenAPI contract.
+- Customer: login, `/auth/me`, account list/detail, both history feeds, CSRF rejection, deposit,
+  withdrawal, transfer/detail, admin denial, logout, revoked-session rejection.
+- Admin: login, dashboard, customer list/detail, customer-money denial, freeze/unfreeze,
+  deactivate/activate.
+- Integrity: all accounts reconciled and all required audit events existed.
+
+#### Files I Changed
+
+- `backend/app/services/audit_service.py`
+- `backend/app/services/auth_service.py`
+- `backend/app/services/transfer_service.py`
+- `backend/app/api/deps.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_backend_audit.py`
+- `backend/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Permission-denied records contain numeric IDs/role names, never account numbers.
+- Auth logs exclude emails, passwords, hashes, tokens, cookies, and headers.
+- Correlation IDs and structured centralized logging remain explicitly scheduled hardening.
+- The frontend contract is frozen at this checkpoint.
+
+#### Technical Debt
+
+- FastAPI's current TestClient integration emits one documented httpx deprecation warning.
+
+#### Next Step
+
+Stop at BACKEND-COMPLETE. Do not begin Phase 28 frontend work without explicit authorization.
+
 ---
 
 ## Long-Term Logs
@@ -2646,6 +2737,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D27 | 2026-06-29 | Define recent dashboard activity as a 30-day transaction count and exclude ADMIN from customer totals | Phase 24 admin dashboard | All-time vs windowed activity; all users vs customers | Explicit semantics make aggregates testable and match the management domain. | Static seed may show zero recent rows; real activity updates the metric naturally. |
 | D28 | 2026-06-29 | Keep admin customer drill-down queries separate from customer ownership dependencies | Phase 25 admin reads | Reuse `OwnedAccount`; dedicated admin queries | Admins need management visibility but must not become account owners. | Admin reads filter CUSTOMER identities directly and share only response/pagination contracts. |
 | D29 | 2026-06-29 | Restrict account status controls to ACTIVE/FROZEN and atomically revoke sessions on deactivation | Phase 26 admin controls | Free-form status; reopen CLOSED; separate revocation/audit commits | A narrow state machine prevents accidental reopening; one transaction prevents active sessions surviving a recorded deactivation. | CLOSED requires a future explicit workflow; all status mutations require ADMIN plus CSRF. |
+| D30 | 2026-06-29 | Complete D2 audit wiring and log only sanitized event names plus numeric identifiers | Phase 27 backend finalization | Defer audit gaps; route-local auditing; shared boundaries; rich log context | Shared boundaries prevent omissions, and excluding sensitive values by construction is safer than masking after interpolation. | All 11 MVP event types are present; correlation IDs and structured logging remain hardening. |
 
 ### Debugging Log
 
