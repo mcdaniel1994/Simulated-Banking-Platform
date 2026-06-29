@@ -2416,6 +2416,50 @@ Result: `93 passed, 1 existing warning`.
 
 Commit Phase 21 and implement Phase 22 transfer separately.
 
+### Entry — 2026-06-29 — Phase 22: Atomic Transfer
+
+#### What I Worked On
+
+I added transfer creation and owned transfer detail. The service rejects same-account requests,
+locks both owned rows in ascending ID order, validates status and funds, creates the parent,
+updates both balances, appends TRANSFER_OUT/TRANSFER_IN legs with one reference ID, and writes the
+audit event in one transaction.
+
+#### What Actually Happened
+
+Seven focused tests and all 100 backend tests passed. An induced failure after database flush but
+before commit left both balances and all transfer/audit tables unchanged. Real Uvicorn verification
+moved exactly `1.00`, created two legs, and returned the owned parent. Ruff and Alembic passed.
+
+#### Concepts I Learned
+
+- Consistent lock order prevents opposite-direction transfers from deadlocking each other.
+- The parent must be flushed for its ID before both ledger legs can share that reference.
+- A post-flush failure is the meaningful rollback test because SQL statements have executed but
+  the transaction is not committed.
+
+#### Tests I Added
+
+- Atomic transfer parent, balance changes, two legs, `balance_after`, audit, and detail read.
+- Same-account, non-owned source/destination, insufficient funds, inactive account, and CSRF.
+- Induced post-flush failure with complete rollback.
+
+Result: `100 passed, 1 existing warning`.
+
+#### Files I Changed
+
+- `backend/app/schemas/transfer.py`
+- `backend/app/services/transfer_service.py`
+- `backend/app/api/routes/transfers.py`
+- `backend/app/main.py`
+- `backend/tests/api/test_transfers.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 22 and prove reconciliation and concurrent-overdraw safety in Phase 23.
+
 ---
 
 ## Long-Term Logs
@@ -2451,6 +2495,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D22 | 2026-06-29 | Use limit/offset pagination with default 20, maximum 100, and newest-first stable ordering | Phase 19 transaction history | Different page sizes; silent clamp; oldest/account-grouped/newest order | Bounded explicit validation limits work; `created_at DESC, id DESC` gives a useful feed and stable timestamp ties. | Invalid bounds return 422; offset pages can shift under concurrent inserts, so cursor pagination remains a future production option. |
 | D23 | 2026-06-29 | Require decimal-string money input and re-lock owned accounts inside mutation services | Phase 20 deposit | JSON number vs string; mutate dependency row vs locked re-query | Exact strings prevent float drift; the locked query makes the balance read concurrency-safe. | Money requests reject floats and excess precision; mutations perform a second ownership-filtered lookup. |
 | D24 | 2026-06-29 | Check withdrawal funds while holding the account row lock | Phase 21 withdrawal | Pre-lock validation; locked validation; database constraint only | Locked validation prevents concurrent requests from approving against one stale balance while returning a useful domain error. | Overdraw returns `INSUFFICIENT_FUNDS`; the database check remains a final backstop. |
+| D25 | 2026-06-29 | Lock transfer accounts in ascending ID order and test rollback after flush | Phase 22 transfer | Request order; sorted order; shallow pre-flush failure; post-flush failure | Sorted locks avoid deadlocks; post-flush failure proves database atomicity after statements execute. | Transfer parent, balances, two legs, and audit share one commit and fully roll back together. |
 
 ### Debugging Log
 

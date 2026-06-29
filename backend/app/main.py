@@ -7,6 +7,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.money import router as money_router
 from app.api.routes.transactions import router as transactions_router
+from app.api.routes.transfers import router as transfers_router
 from app.errors import (
     DomainError,
     catch_unexpected_exceptions,
@@ -41,3 +42,6 @@ app.include_router(transactions_router, prefix="/api")
 
 # Money mutations add explicit CSRF and locked service-layer transaction boundaries.
 app.include_router(money_router, prefix="/api")
+
+# Transfers lock two owned accounts and persist both ledger legs atomically.
+app.include_router(transfers_router, prefix="/api")
