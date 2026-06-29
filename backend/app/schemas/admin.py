@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.models import AccountStatus
 from app.schemas.account import AccountResponse
 from app.schemas.transaction import TransactionResponse
 
@@ -44,3 +45,22 @@ class AdminDashboardResponse(BaseModel):
     def serialize_balance(cls, value: Decimal | str) -> str:
         decimal_value = value if isinstance(value, Decimal) else Decimal(value)
         return format(decimal_value, ".2f")
+
+
+class UserStatusRequest(BaseModel):
+    """Administrator-selected customer activation state."""
+
+    is_active: bool
+
+
+class AccountStatusRequest(BaseModel):
+    """Freeze or unfreeze an account without reopening a CLOSED account."""
+
+    status: AccountStatus
+
+    @field_validator("status")
+    @classmethod
+    def allow_only_active_or_frozen(cls, value: AccountStatus) -> AccountStatus:
+        if value not in {AccountStatus.ACTIVE, AccountStatus.FROZEN}:
+            raise ValueError("status must be ACTIVE or FROZEN")
+        return value

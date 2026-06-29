@@ -2,11 +2,19 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session as DatabaseSession
 
 from app.errors import NotFoundError
-from app.models import Account, Transaction, User, UserRole
+from app.models import (
+    Account,
+    AccountStatus,
+    AuditEvent,
+    Session,
+    Transaction,
+    User,
+    UserRole,
+)
 
 RECENT_TRANSACTION_DAYS = 30
 
@@ -94,3 +102,83 @@ def get_customer_detail(
         transaction_limit=limit,
         transaction_offset=offset,
     )
+
+
+def set_customer_active_status(
+    db: DatabaseSession,
+    *,
+    admin: User,
+    user_id: int,
+    is_active: bool,
+) -> User:
+    """Atomically change customer status and revoke sessions on deactivation."""
+
+    customer = db.scalar(
+        select(User).where(
+            User.id == user_id,
+            User.role == UserRole.CUSTOMER,
+        )
+    )
+    if customer is None:
+        raise NotFoundError
+
+    now = datetime.now(UTC)
+    event_type = "user_activated" if is_active else "user_deactivated"
+    try:
+        customer.is_active = is_active
+        if not is_active:
+            db.execute(
+                update(Session)
+                .where(
+                    Session.user_id == customer.id,
+                    Session.revoked_at.is_(None),
+                )
+                .values(revoked_at=now)
+            )
+        db.add(
+            AuditEvent(
+                actor=admin,
+                event_type=event_type,
+                entity_type="user",
+                entity_id=str(customer.id),
+                event_metadata={"is_active": is_active},
+                created_at=now,
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return customer
+
+
+def set_account_status(
+    db: DatabaseSession,
+    *,
+    admin: User,
+    account_id: int,
+    account_status: AccountStatus,
+) -> Account:
+    """Atomically freeze or unfreeze an account and record the admin action."""
+
+    account = db.get(Account, account_id)
+    if account is None:
+        raise NotFoundError
+
+    event_type = "account_frozen" if account_status is AccountStatus.FROZEN else "account_unfrozen"
+    try:
+        account.status = account_status
+        db.add(
+            AuditEvent(
+                actor=admin,
+                event_type=event_type,
+                entity_type="account",
+                entity_id=str(account.id),
+                event_metadata={"status": account_status.value},
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return account

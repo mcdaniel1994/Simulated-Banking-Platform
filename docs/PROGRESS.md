@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M5 — Admin Backend (in progress)
-- Current phase: Phase 25 — Admin customer reads (complete)
-- Current task: Commit Phase 25, then begin Phase 26
-- Last completed: Phase 25 — Admin customer reads
-- Next action: Commit Phase 25, then implement Phase 26 status controls
+- Current milestone: M5 — Admin Backend (complete)
+- Current phase: Phase 26 — Status controls (complete)
+- Current task: Commit Phase 26, then begin backend finalization
+- Last completed: Phase 26 — Status controls
+- Next action: Commit Phase 26, then execute Phase 27 checkpoint
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -24,7 +24,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 8–16 complete |
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
-| M5 — Admin Backend | IN PROGRESS | 2026-06-29 |  | Phases 24–25 complete |
+| M5 — Admin Backend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 24–26 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | NOT STARTED |  |  | Checkpoint |
 | M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
 | M8 — Customer Frontend | NOT STARTED |  |  |  |
@@ -593,32 +593,37 @@ Status: COMPLETE
 - [x] Ensure admin reads don't reuse ownership dep
 - [x] Add admin read tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: focused admin/customer pagination tests `12 passed`; full suite `109 passed, 1 existing
   warning`; Ruff passed; `alembic check` reported no model/schema drift.
 - Manual verification: Real Uvicorn admin list returned two customers; detail returned two
   accounts, a two-row transaction page, and string money.
-- Commit:
+- Commit: `f59506b feat(admin): add customer list and customer-detail drill-down`
 - Notes: Admin queries filter CUSTOMER users directly and do not use customer ownership
   dependencies. Customer detail reuses the shared 20/100 pagination contract.
 
 ### Phase 26 — Status controls (deactivate / freeze)
-Status: NOT STARTED
-- [ ] Activate/deactivate user; revoke sessions on deactivate
-- [ ] Freeze/unfreeze account
-- [ ] CSRF-protect both; emit audit rows (D2)
-- [ ] Assert deactivated user can't auth; frozen rejects money ops
-- [ ] Add deactivation-revoke + freeze + admins-not-owners tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Activate/deactivate user; revoke sessions on deactivate
+- [x] Freeze/unfreeze account
+- [x] CSRF-protect both; emit audit rows (D2)
+- [x] Assert deactivated user can't auth; frozen rejects money ops
+- [x] Add deactivation-revoke + freeze + admins-not-owners tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: focused status-control tests `5 passed`; full suite `114 passed, 1 existing warning`;
+  Ruff passed; `alembic check` reported no model/schema drift.
+- Manual verification: Real Uvicorn deactivation killed the live customer session (401);
+  activation restored login; freeze blocked deposit with `INACTIVE_ACCOUNT`; unfreeze restored
+  ACTIVE.
 - Commit:
-- Notes:
+- Notes: Deactivation, bulk session revocation, and audit share one commit. Freeze/unfreeze and
+  audit share one commit. CLOSED is not accepted by this transition endpoint, and ADMIN remains
+  unable to perform customer money operations.
 
 ---
 

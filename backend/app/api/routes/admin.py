@@ -3,14 +3,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session as DatabaseSession
 
-from app.api.deps import AdminUser
+from app.api.deps import AdminUser, CsrfProtected
 from app.api.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from app.db.session import get_db
-from app.models import User
+from app.models import Account, User
+from app.schemas.account import AccountResponse
 from app.schemas.admin import (
+    AccountStatusRequest,
     AdminCustomerDetailResponse,
     AdminCustomerResponse,
     AdminDashboardResponse,
+    UserStatusRequest,
 )
 from app.services.admin_service import (
     AdminCustomerDetail,
@@ -18,6 +21,8 @@ from app.services.admin_service import (
     get_customer_detail,
     get_dashboard_summary,
     list_customers,
+    set_account_status,
+    set_customer_active_status,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -54,3 +59,39 @@ def get_customer_detail_route(
     """Return one customer's accounts and stable transaction page."""
 
     return get_customer_detail(db, user_id=user_id, limit=limit, offset=offset)
+
+
+@router.patch("/users/{user_id}/status", response_model=AdminCustomerResponse)
+def set_customer_status_route(
+    user_id: int,
+    request_body: UserStatusRequest,
+    _csrf: CsrfProtected,
+    admin: AdminUser,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> User:
+    """Activate or deactivate a customer, revoking sessions on deactivation."""
+
+    return set_customer_active_status(
+        db,
+        admin=admin,
+        user_id=user_id,
+        is_active=request_body.is_active,
+    )
+
+
+@router.patch("/accounts/{account_id}/status", response_model=AccountResponse)
+def set_account_status_route(
+    account_id: int,
+    request_body: AccountStatusRequest,
+    _csrf: CsrfProtected,
+    admin: AdminUser,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> Account:
+    """Freeze or unfreeze an account without granting the admin ownership."""
+
+    return set_account_status(
+        db,
+        admin=admin,
+        account_id=account_id,
+        account_status=request_body.status,
+    )

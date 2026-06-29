@@ -2572,6 +2572,40 @@ two-row history page.
 
 Commit Phase 25 and implement status controls in Phase 26.
 
+### Entry — 2026-06-29 — Phase 26: Administrative Status Controls
+
+#### What I Worked On
+
+I added CSRF-protected customer activation/deactivation and account freeze/unfreeze endpoints.
+Deactivation bulk-revokes all active sessions in the same transaction; every transition writes a
+D2 audit event. The account endpoint accepts only ACTIVE/FROZEN and cannot reopen CLOSED accounts.
+
+#### What Actually Happened
+
+Five focused tests and all 114 backend tests passed. Real Uvicorn proved a live customer session
+became 401 immediately after deactivation, activation restored login, freeze blocked deposits, and
+unfreeze restored ACTIVE.
+
+#### Security or Reliability Considerations
+
+- Admin status mutations require both SQL ADMIN role and CSRF.
+- Deactivation, revocation, and audit are atomic.
+- ADMIN remains unable to call customer money routes.
+- Status audit metadata contains only IDs and state, never account numbers or credentials.
+
+#### Files I Changed
+
+- `backend/app/schemas/admin.py`
+- `backend/app/services/admin_service.py`
+- `backend/app/api/routes/admin.py`
+- `backend/tests/api/test_admin_status.py`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Next Step
+
+Commit Phase 26 and perform the Phase 27 BACKEND-COMPLETE audit and walkthrough.
+
 ---
 
 ## Long-Term Logs
@@ -2611,6 +2645,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D26 | 2026-06-29 | Keep reconciliation test-only for the MVP and verify concurrency with independent PostgreSQL sessions | Phase 23 integrity verification | Admin endpoint; helper plus DB tests; sequential simulation | The MVP requires proof, not an admin feature; independent sessions exercise real row locks. | M4 closes with reconciliation and no-overdraft evidence without extension scope. |
 | D27 | 2026-06-29 | Define recent dashboard activity as a 30-day transaction count and exclude ADMIN from customer totals | Phase 24 admin dashboard | All-time vs windowed activity; all users vs customers | Explicit semantics make aggregates testable and match the management domain. | Static seed may show zero recent rows; real activity updates the metric naturally. |
 | D28 | 2026-06-29 | Keep admin customer drill-down queries separate from customer ownership dependencies | Phase 25 admin reads | Reuse `OwnedAccount`; dedicated admin queries | Admins need management visibility but must not become account owners. | Admin reads filter CUSTOMER identities directly and share only response/pagination contracts. |
+| D29 | 2026-06-29 | Restrict account status controls to ACTIVE/FROZEN and atomically revoke sessions on deactivation | Phase 26 admin controls | Free-form status; reopen CLOSED; separate revocation/audit commits | A narrow state machine prevents accidental reopening; one transaction prevents active sessions surviving a recorded deactivation. | CLOSED requires a future explicit workflow; all status mutations require ADMIN plus CSRF. |
 
 ### Debugging Log
 
