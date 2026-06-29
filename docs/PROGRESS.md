@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M0 — Decisions & Prep (complete)
-- Current phase: Phase 0 — Confirm open decisions (complete)
-- Current task: Phase 0 closed
+- Current milestone: M1 — Repo & Backend Foundation
+- Current phase: Phase 1 — Repository structure & tooling
+- Current task: Create the backend package skeleton directories
 - Last completed: Phase 0 — Confirm open decisions
-- Next action: Begin Phase 1 — Repository structure & tooling
+- Next action: Create only the backend package skeleton
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -20,7 +20,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | Milestone | Status | Started | Completed | Notes |
 |---|---|---|---|---|
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
-| M1 — Repo & Backend Foundation | NOT STARTED |  |  |  |
+| M1 — Repo & Backend Foundation | IN PROGRESS | 2026-06-29 |  | Phase 1 started; uv selected |
 | M2 — Database | NOT STARTED |  |  |  |
 | M3 — Authentication & Authorization | NOT STARTED |  |  |  |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
@@ -60,7 +60,8 @@ Completion evidence:
 ## M1 — Repo & Backend Foundation `[SUBMISSION]`
 
 ### Phase 1 — Repository structure & tooling
-Status: NOT STARTED
+Status: IN PROGRESS
+- [x] Select uv for environment and dependency management
 - [ ] Create backend package skeleton directories
 - [ ] Create and activate a virtual environment
 - [ ] Pin core dependencies
