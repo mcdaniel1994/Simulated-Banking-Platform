@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M1 — Repo & Backend Foundation
-- Current phase: Phase 2 — FastAPI app + health endpoint (complete)
-- Current task: Phase 2 closed
-- Last completed: Phase 2 — FastAPI app + health endpoint
-- Next action: Begin Phase 3 — Configuration & environment variables
+- Current milestone: M1 — Repo & Backend Foundation (complete)
+- Current phase: Phase 3 — Configuration & environment variables (complete)
+- Current task: M1 foundation milestone closed
+- Last completed: Phase 3 — Configuration & environment variables
+- Next action: Resolve D5 (sync vs async SQLAlchemy) before Phase 4
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -20,7 +20,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | Milestone | Status | Started | Completed | Notes |
 |---|---|---|---|---|
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
-| M1 — Repo & Backend Foundation | IN PROGRESS | 2026-06-29 |  | Phases 1–2 complete |
+| M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
 | M2 — Database | NOT STARTED |  |  |  |
 | M3 — Authentication & Authorization | NOT STARTED |  |  |  |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
@@ -100,20 +100,23 @@ Completion evidence:
   as technical debt. This endpoint is liveness-only and intentionally does not check a database.
 
 ### Phase 3 — Configuration & environment variables
-Status: NOT STARTED
-- [ ] Define the `Settings` model (SPEC §18 vars)
-- [ ] Provide a single cached settings accessor
-- [ ] Write `.env.example`
-- [ ] Confirm `.env` is git-ignored
-- [ ] Add settings unit test
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Define the `Settings` model (SPEC §18 vars)
+- [x] Provide a single cached settings accessor
+- [x] Write `.env.example`
+- [x] Confirm `.env` is git-ignored
+- [x] Add settings unit tests
+- [x] Record decisions and learning notes in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `6 passed, 1 existing warning`; Ruff format and lint checks passed.
+- Manual verification: `.env.example` loaded as `development` with D1 defaults; database URL and
+  session secret were redacted; blank `COOKIE_DOMAIN` normalized to `None`; `.env` is ignored while
+  `.env.example` remains trackable.
+- Commit: `feat(config): add env-driven settings and .env.example`
+- Notes: No real `.env` or secrets were created. FastAPI's existing TestClient warning remains
+  tracked as Phase 2 technical debt.
 
 ---
 

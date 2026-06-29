@@ -49,7 +49,16 @@ not import API routes, and services should not depend on frontend behavior.
 
 ## Development Commands
 
-Run these commands from this directory:
+Create a local environment file from the safe template before running configuration-dependent code:
+
+```bash
+cp ../.env.example ../.env
+```
+
+Replace the placeholder database credentials and session secret in `.env`. The real file is
+git-ignored and must never be committed.
+
+Run backend commands from this directory:
 
 ```bash
 uv sync

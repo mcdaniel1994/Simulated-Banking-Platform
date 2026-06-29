@@ -348,6 +348,121 @@ does not suggest unnecessary import suppressions.
 Review and commit Phase 2. Stop before Phase 3 so configuration and environment variables remain a
 separate, focused change.
 
+### Entry — 2026-06-29 — Phase 3: Configuration and Environment Variables
+
+#### What I Worked On
+
+I created a typed Pydantic settings model for every environment variable required by the
+specification, added a cached accessor, wrote a safe root `.env.example`, and documented the local
+setup in the backend guide. I added unit tests for dotenv loading, D1 session defaults, required
+values, secret redaction, blank cookie-domain normalization, and settings caching.
+
+#### What I Expected to Happen
+
+I expected configuration to load consistently from process environment variables or the root
+`.env`, reject missing database and session values, and expose typed values without leaking
+credentials through normal debug output.
+
+#### What Actually Happened
+
+The safe template loaded as `development` with the 30-minute idle and 12-hour absolute session
+defaults. Both the database URL and session secret displayed as redacted values, and a blank local
+cookie domain normalized to `None`. The full suite finished with six passing tests and the existing
+FastAPI TestClient warning.
+
+#### Concepts I Learned
+
+- Environment variables separate deploy-specific values and secrets from source code.
+- `BaseSettings` converts string environment values into typed Python values.
+- Complex values such as CORS-origin lists use JSON syntax in environment files.
+- `SecretStr` reduces accidental credential exposure in logs and object representations.
+- `lru_cache` lets the process construct settings once and reuse one consistent instance.
+- Required configuration can fail clearly without embedding unsafe fallback credentials.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Local env-file location | Root; backend directory | Root `.env` | It matches the planned repository layout and keeps one environment entry point for the future full stack. | The configuration resolves the repository root for local loading. |
+| Sensitive field representation | Plain strings; `SecretStr` | `SecretStr` for database URL and session secret | Both values can contain credentials that should not appear in normal output. | Consumers must explicitly request the underlying value when connecting or hashing. |
+| CORS representation | Comma-separated text; JSON list | JSON list | Pydantic can parse it directly into `list[str]` without custom splitting. | Environment-file authors must use valid JSON syntax. |
+| Empty cookie domain | Preserve empty string; normalize to `None` | Normalize to `None` | Local cookies should omit the Domain attribute rather than receive an empty domain. | A small validator is required. |
+
+#### Problems I Encountered
+
+- Ruff required its configured import ordering in the new test module.
+- The first security pass protected the session secret but left the credential-bearing database
+  URL as a plain string.
+
+#### How I Diagnosed Them
+
+- I used Ruff's safe automatic fix for the import order.
+- I manually loaded `.env.example` and reviewed which values appeared in settings output.
+
+#### How I Solved Them
+
+- I applied only Ruff's mechanical import correction.
+- I changed the database URL to `SecretStr`, expanded the redaction test, and confirmed both
+  sensitive values display as `**********`.
+- I added a validator and test for the blank local cookie domain.
+
+#### Tests I Added
+
+- Loads and parses every supported value from an isolated dotenv file.
+- Uses the D1 session defaults when optional values are absent.
+- Rejects missing `DATABASE_URL` and `SESSION_SECRET`.
+- Redacts both the database URL and session secret.
+- Reuses one cached settings instance.
+
+Result: `6 passed, 1 existing warning` across the full backend suite.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests
+uv run ruff check app tests
+uv run pytest -q
+uv run python -c "from app.core.config import Settings; print(Settings(_env_file='../.env.example'))"
+cd ..
+git check-ignore -v .env
+git check-ignore -v .env.example
+```
+
+#### Files I Changed
+
+- `.env.example`
+- `backend/app/core/config.py`
+- `backend/tests/unit/test_config.py`
+- `backend/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Real `.env` files remain ignored while `.env.example` is trackable.
+- No real database credential or session secret was created or committed.
+- Required sensitive settings have no source-code defaults.
+- Sensitive settings are redacted during normal string and representation output.
+- Positive-number validation prevents zero or negative session lifetimes.
+- The cached accessor avoids inconsistent configuration objects during one process lifetime.
+
+#### What I Would Do Differently
+
+I would classify every credential-bearing configuration field as sensitive during the initial model
+design rather than catching the database URL during the security review.
+
+#### Questions I Still Have
+
+- How should production startup validation distinguish safe real secrets from example placeholders?
+- Should a later configuration layer use separate development, test, and production subclasses, or
+  will one typed model remain sufficient?
+
+#### Next Step
+
+Commit Phase 3, then resolve D5 before Phase 4 so the SQLAlchemy engine and session design use one
+deliberate sync or async approach.
+
 ---
 
 ## Long-Term Logs
