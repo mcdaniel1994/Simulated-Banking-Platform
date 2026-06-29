@@ -1,5 +1,5 @@
 import pytest
-from app.api.deps import CSRF_INVALID_ERROR
+from app.errors import CSRF_INVALID_ERROR
 from app.models import AuditEvent, Session
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select

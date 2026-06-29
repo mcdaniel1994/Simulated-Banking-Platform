@@ -4,8 +4,7 @@ from datetime import UTC, datetime, timedelta
 from hmac import compare_digest
 from typing import Annotated
 
-from fastapi import Depends, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DatabaseSession
 from sqlalchemy.orm import joinedload
@@ -13,57 +12,10 @@ from sqlalchemy.orm import joinedload
 from app.core.config import get_settings
 from app.core.security import get_session_cookie_name, hash_session_token
 from app.db.session import get_db
+from app.errors import CsrfInvalidError, ForbiddenError, NotFoundError, UnauthenticatedError
 from app.models import Account, Session, User, UserRole
 
-UNAUTHENTICATED_ERROR = {
-    "error": {
-        "code": "UNAUTHENTICATED",
-        "message": "Authentication required",
-        "fields": {},
-    }
-}
-
-CSRF_INVALID_ERROR = {
-    "error": {
-        "code": "CSRF_INVALID",
-        "message": "Invalid CSRF token",
-        "fields": {},
-    }
-}
-
-FORBIDDEN_ERROR = {
-    "error": {
-        "code": "FORBIDDEN",
-        "message": "Insufficient permissions",
-        "fields": {},
-    }
-}
-
-NOT_FOUND_ERROR = {
-    "error": {
-        "code": "NOT_FOUND",
-        "message": "Resource not found",
-        "fields": {},
-    }
-}
-
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
-
-
-class UnauthenticatedError(Exception):
-    """Internal signal for every invalid server-side session state."""
-
-
-class CsrfInvalidError(Exception):
-    """Internal signal for a missing or mismatched double-submit token."""
-
-
-class ForbiddenError(Exception):
-    """Internal signal for an authenticated user with the wrong SQL role."""
-
-
-class NotFoundError(Exception):
-    """Internal signal that conceals whether an account exists for another owner."""
 
 
 @dataclass(frozen=True)
@@ -72,54 +24,6 @@ class AuthenticatedPrincipal:
 
     user: User
     session: Session
-
-
-async def unauthenticated_exception_handler(
-    _request: Request,
-    _error: UnauthenticatedError,
-) -> JSONResponse:
-    """Render the stable public envelope later consolidated by Phase 17."""
-
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content=UNAUTHENTICATED_ERROR,
-    )
-
-
-async def csrf_invalid_exception_handler(
-    _request: Request,
-    _error: CsrfInvalidError,
-) -> JSONResponse:
-    """Return one public response for missing and mismatched CSRF credentials."""
-
-    return JSONResponse(
-        status_code=status.HTTP_403_FORBIDDEN,
-        content=CSRF_INVALID_ERROR,
-    )
-
-
-async def forbidden_exception_handler(
-    _request: Request,
-    _error: ForbiddenError,
-) -> JSONResponse:
-    """Return one public response for every authenticated role mismatch."""
-
-    return JSONResponse(
-        status_code=status.HTTP_403_FORBIDDEN,
-        content=FORBIDDEN_ERROR,
-    )
-
-
-async def not_found_exception_handler(
-    _request: Request,
-    _error: NotFoundError,
-) -> JSONResponse:
-    """Return one public response for missing and non-owned customer resources."""
-
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content=NOT_FOUND_ERROR,
-    )
 
 
 def verify_csrf_token(request: Request) -> None:

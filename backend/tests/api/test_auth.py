@@ -1,8 +1,9 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from app.api.deps import UNAUTHENTICATED_ERROR, _session_is_expired
+from app.api.deps import _session_is_expired
 from app.core.security import HOST_SESSION_COOKIE_NAME, hash_session_token
+from app.errors import UNAUTHENTICATED_ERROR
 from app.models import AuditEvent, Session, User
 from app.seed import ADMIN_EMAIL, ADMIN_PASSWORD
 from argon2 import PasswordHasher, Type

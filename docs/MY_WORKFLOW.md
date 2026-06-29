@@ -1951,6 +1951,142 @@ before changing fixture scope. Faster shared authenticated clients would weaken 
 Review and commit Phase 16. Stop before Phase 17 so centralized domain errors remain a separate M4
 implementation phase.
 
+### Entry — 2026-06-29 — Phase 17: Domain Errors and Common Error Envelope
+
+#### What I Worked On
+
+I created `app/errors.py` with one `DomainError` base and concrete errors for the ten initial codes
+in SPEC §13. Expected domain failures now use one handler, while request validation and
+framework-generated HTTP errors are normalized into the same envelope.
+
+Authentication, CSRF, role, and ownership dependencies now raise the centralized errors. Login
+failure moved into the service as an enumeration-safe `UnauthenticatedError`, which removed the
+route-local `try/except` and `JSONResponse`.
+
+Unexpected exceptions are caught by application middleware, logged with only exception type,
+method, and path, and returned as generic 500 `INTERNAL_ERROR`.
+
+#### What I Expected to Happen
+
+I expected every error path to return `{error: {code, message, fields}}`, validation to omit
+rejected input values, and unexpected failures to expose no SQL, token, password, cookie, or
+traceback details in responses or logs.
+
+#### What Actually Happened
+
+Thirteen focused error tests covered all ten domain errors, validation redaction, unknown routes,
+and forced internal failures. The combined security/error suite passed 36 tests, and the full
+suite passed 66 tests with only the existing TestClient warning. Ruff passed, and Alembic reported
+no drift.
+
+The first real-Uvicorn smoke revealed that Starlette re-raised exceptions after an outer
+`Exception` handler returned a safe response, allowing Uvicorn to print the original planted
+SQL/token message. Moving the catch-all into application middleware prevented propagation. The
+repeated smoke returned the same safe 500 while logs contained only the exception type, method,
+and path.
+
+#### Concepts I Learned
+
+- Typed domain errors separate public failure contracts from route and service implementation.
+- Validation errors need deliberate serialization because framework error objects include rejected
+  input values.
+- A safe response is not enough if the hosting server later logs the raw exception.
+- Middleware ordering determines whether an unexpected exception is converted before or after the
+  server's traceback logger.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Error contract | Per-route responses; per-error handlers; typed base plus one handler | Typed base plus one handler | Services and dependencies can express failures without duplicating HTTP envelopes. | Concrete errors carry HTTP status metadata. |
+| Validation fields | Return FastAPI details; echo messages/inputs; sanitized field map | Sanitized field map | It preserves useful field names without reflecting passwords or rejected values. | Reasons are intentionally generic. |
+| Unexpected failures | Outer exception handler; catch-all middleware | Catch-all middleware | It prevents Starlette/Uvicorn from re-raising and logging secret-bearing exception messages. | Middleware must remain outer to route execution and delegate expected errors normally. |
+| Internal logging | Full traceback; exception message; type/method/path only | Type, method, and path only | These diagnostics are useful without risking SQL, credential, token, or cookie leakage. | Root-cause detail is intentionally limited until secure structured logging exists. |
+
+#### Problems I Encountered
+
+- The original catch-all returned a safe body but Uvicorn still logged the raw exception traceback.
+- Programmatic Alembic migrations disabled the existing `app.errors` logger in combined tests.
+- The older Starlette 422 constant emitted a new deprecation warning.
+
+#### How I Diagnosed Them
+
+- I ran a real Uvicorn probe with planted SQL/token text and inspected server output, not only the
+  HTTP response.
+- I compared isolated and combined test runs and traced logger state to `logging.fileConfig`.
+- The warning named the replacement 422 constant.
+
+#### How I Solved Them
+
+- I caught unexpected failures in application middleware before the outer server-error layer.
+- I configured Alembic with `disable_existing_loggers=False`.
+- I used `HTTP_422_UNPROCESSABLE_CONTENT`.
+
+#### Tests I Added
+
+- Every initial domain error code renders the common envelope with its expected status.
+- Request validation omits a planted rejected password.
+- Unknown routes return the common 404 `NOT_FOUND` envelope.
+- Forced internal errors return generic 500 `INTERNAL_ERROR`.
+- Planted SQL/token fragments appear in neither the internal response nor application logs.
+- The safe internal log retains exception type, request method, and path.
+
+Result: `66 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest tests/api/test_errors.py -q
+uv run pytest tests/api/test_auth.py tests/api/test_csrf.py \
+  tests/api/test_authorization.py tests/api/test_ownership.py tests/api/test_errors.py -q
+uv run pytest -q
+uv run alembic check
+uv run uvicorn tests.api.test_errors:app --host 127.0.0.1 --port 8017
+```
+
+#### Files I Changed
+
+- `backend/app/errors.py`
+- `backend/app/main.py`
+- `backend/app/api/deps.py`
+- `backend/app/api/routes/auth.py`
+- `backend/app/services/auth_service.py`
+- `backend/alembic/env.py`
+- `backend/tests/api/test_auth.py`
+- `backend/tests/api/test_csrf.py`
+- `backend/tests/api/test_authorization.py`
+- `backend/tests/api/test_ownership.py`
+- `backend/tests/api/test_errors.py`
+- `backend/app/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Validation responses never serialize rejected input values.
+- Unexpected errors never return exception messages or tracebacks.
+- The catch-all logs no exception message, SQL, headers, cookies, or token values.
+- Expected login, authentication, CSRF, role, and ownership semantics remain unchanged.
+- Alembic no longer disables application loggers when migrations run in the same process.
+
+#### What I Would Do Differently
+
+I would include a real-server log inspection in the first catch-all test plan, because in-process
+response tests cannot prove what Uvicorn logs after the response is sent.
+
+#### Questions I Still Have
+
+- Correlation IDs and secure structured logging remain scheduled for hardening; the current
+  minimal log deliberately favors secrecy over deep diagnostics.
+
+#### Next Step
+
+Review and commit Phase 17. Stop before Phase 18 so account reads and money serialization remain a
+separate bounded phase.
+
 ---
 
 ## Long-Term Logs
@@ -1981,6 +2117,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D17 | 2026-06-29 | Build parameterized SQL-backed role guards and expose named ADMIN/CUSTOMER aliases | Phase 14 role authorization | Separate guard functions; one factory; inline route checks | One factory prevents policy drift, while aliases keep each route's required role visible and return the already authenticated SQL user. | Client role input is ignored; mismatches share a 403 `FORBIDDEN` envelope; future protected routes must choose the appropriate alias. |
 | D18 | 2026-06-29 | Filter customer account lookups by resource ID and authenticated owner ID in one query | Phase 15 ownership authorization | Load then compare; combined filter; route-local checks | A combined query keeps non-owned rows outside application logic and naturally gives missing and non-owned resources one 404 outcome. | Customer account routes use `OwnedAccount`; ADMIN cannot reuse customer ownership logic and needs separate admin queries. |
 | D19 | 2026-06-29 | Use function-scoped authenticated role fixtures that call the real login route | Phase 16 security-suite consolidation | Mock principals; inject cookies; real seeded login; broader fixture scope | Real login preserves the SQL user, session, and cookie boundary while function scope prevents state leakage. | Authorization tests perform more Argon2/database work but remain realistic and isolated. |
+| D20 | 2026-06-29 | Centralize typed domain errors and catch unexpected failures before server traceback logging | Phase 17 error boundary | Route-local responses; per-error handlers; outer exception handler; application middleware | One domain handler keeps contracts stable, while middleware prevents Uvicorn from logging raw secret-bearing exception messages. | Validation fields are sanitized; internal logs retain only exception type, method, and path until structured logging hardening. |
 
 ### Debugging Log
 

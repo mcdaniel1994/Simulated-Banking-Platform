@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, status
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session as DatabaseSession
 
 from app.api.deps import CsrfProtected, CurrentPrincipal, CurrentUser
@@ -9,18 +8,9 @@ from app.core.config import get_settings
 from app.core.security import generate_csrf_token, get_session_cookie_name
 from app.db.session import get_db
 from app.schemas.auth import CurrentUserResponse, LoginRequest, LoginResponse
-from app.services.auth_service import LoginFailedError, login, logout
+from app.services.auth_service import login, logout
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-# Every credential-related failure uses the same shape and wording to prevent account discovery.
-GENERIC_LOGIN_ERROR = {
-    "error": {
-        "code": "UNAUTHENTICATED",
-        "message": "Invalid email or password",
-        "fields": {},
-    }
-}
 
 
 @router.post(
@@ -33,24 +23,17 @@ def login_route(
     request: Request,
     response: Response,
     db: Annotated[DatabaseSession, Depends(get_db)],
-) -> LoginResponse | JSONResponse:
+) -> LoginResponse:
     """Authenticate a user and issue the cookie pair used by later auth dependencies."""
 
     # The route translates HTTP context; credential rules and transaction ownership stay in service.
-    try:
-        result = login(
-            db,
-            email=credentials.email,
-            password=credentials.password,
-            user_agent=request.headers.get("user-agent"),
-            ip=request.client.host if request.client is not None else None,
-        )
-    except LoginFailedError:
-        # Phase 17 will centralize this already-correct public envelope.
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content=GENERIC_LOGIN_ERROR,
-        )
+    result = login(
+        db,
+        email=credentials.email,
+        password=credentials.password,
+        user_agent=request.headers.get("user-agent"),
+        ip=request.client.host if request.client is not None else None,
+    )
 
     settings = get_settings()
 

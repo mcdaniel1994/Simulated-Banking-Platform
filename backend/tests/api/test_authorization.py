@@ -1,4 +1,5 @@
-from app.api.deps import FORBIDDEN_ERROR, AdminUser, CustomerUser
+from app.api.deps import AdminUser, CustomerUser
+from app.errors import FORBIDDEN_ERROR
 from app.main import app
 from fastapi.testclient import TestClient
 

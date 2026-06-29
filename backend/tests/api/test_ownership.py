@@ -1,5 +1,6 @@
 import pytest
-from app.api.deps import FORBIDDEN_ERROR, NOT_FOUND_ERROR, OwnedAccount
+from app.api.deps import OwnedAccount
+from app.errors import FORBIDDEN_ERROR, NOT_FOUND_ERROR
 from app.main import app
 from app.models import Account, User
 from fastapi.testclient import TestClient

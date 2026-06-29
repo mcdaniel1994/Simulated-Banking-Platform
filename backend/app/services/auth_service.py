@@ -12,14 +12,11 @@ from app.core.security import (
     needs_rehash,
     verify_password,
 )
+from app.errors import UnauthenticatedError
 from app.models import AuditEvent, Session, User
 
 # Unknown emails still perform one real Argon2 verification to reduce user-enumeration timing clues.
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-user-password")
-
-
-class LoginFailedError(Exception):
-    """Internal signal mapped to one generic public authentication failure."""
 
 
 @dataclass(frozen=True)
@@ -69,7 +66,7 @@ def login(
     # Unknown, wrong-password, and inactive-user paths deliberately share one public failure.
     if user is None or not password_matches or not user.is_active:
         _commit_login_failure(db, user)
-        raise LoginFailedError
+        raise UnauthenticatedError(message="Invalid email or password")
 
     # One timestamp anchors creation, idle activity, absolute expiry, and the success audit.
     now = datetime.now(UTC)

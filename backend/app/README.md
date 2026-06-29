@@ -17,12 +17,12 @@ the same files.
 | `schemas/` | Pydantic request and response models | ORM persistence logic |
 | `services/` | Business rules, authorization-sensitive operations, row locking, and atomic transactions | HTTP-specific response construction |
 
-The following files will be added only when their implementation phase begins:
+These top-level files coordinate cross-package application behavior:
 
-| File | Future Responsibility |
+| File | Responsibility |
 |---|---|
-| `main.py` | Create the FastAPI application and include routers |
-| `errors.py` | Map domain errors into the common API error envelope |
+| `main.py` | Create the FastAPI application, register shared error handling, and include routers |
+| `errors.py` | Define typed domain errors and map all failures into the common API envelope |
 | `seed.py` | Create deterministic, idempotent demonstration data |
 
 ## Dependency Direction
