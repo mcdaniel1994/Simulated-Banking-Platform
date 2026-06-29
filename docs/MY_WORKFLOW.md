@@ -947,6 +947,121 @@ the dependency direction is visible without a documented reorder.
 Review and commit Phase 8, then return to Phase 7 and use this shared hashing primitive for every
 seeded demo credential. Do not begin Phase 9.
 
+### Entry — 2026-06-29 — Phase 7: Deterministic, Idempotent Seed
+
+#### What I Worked On
+
+I created a command-line seed that builds one synthetic administrator, two synthetic customers,
+four accounts, twelve historical transaction rows, and two completed internal transfers. It uses
+the shared Argon2id primitive completed in Phase 8.
+
+#### What I Expected to Happen
+
+I expected a clean database to receive a realistic but compact demo graph, every balance to
+reconcile with its signed transaction history, and a second run to preserve the same row counts
+and password hashes without duplicating data.
+
+#### What Actually Happened
+
+The development seed ran twice and remained at 3 users, 4 accounts, 2 transfers, and 12
+transactions. All four account balances reconciled exactly, and each transfer had a matching
+`TRANSFER_OUT` and `TRANSFER_IN` row sharing its transfer ID.
+
+The full suite passed with 25 tests and the existing FastAPI TestClient warning. Ruff passed, and
+Alembic reported no model/schema drift.
+
+#### Concepts I Learned
+
+- Idempotent seed logic uses stable natural keys and does not assume generated integer IDs.
+- Opening balances must be represented as transactions or reconciliation is broken from the start.
+- Randomly salted password hashes can remain idempotent by reusing a valid existing hash.
+- Append-only history should not be deleted merely to make reseeding convenient.
+- One database transaction prevents a failed seed from leaving a partial demo graph.
+
+#### Decisions I Made
+
+| Decision | Options Considered | Choice | Reason | Trade-off |
+|---|---|---|---|---|
+| Demo identities | Real-looking public domains; reserved synthetic domain | `.test` email addresses | Reserved addresses cannot accidentally identify or contact real people. | They look intentionally synthetic. |
+| Demo credentials | Generated secrets; fixed public credentials | Fixed reviewer credentials | The future login page must show credentials and reseeding must restore known access. | They are never suitable for production. |
+| Seed history | Opening deposits only; varied history with transfers | Opening deposits, deposits/withdrawals, and one transfer per customer | Dashboards and transaction pages will have meaningful data covering every transaction type. | The seed script is longer than a minimal fixture. |
+| Rerun behavior | Delete/rebuild history; preserve existing account pairs | Preserve existing append-only activity | Reseeding cannot silently erase reviewer transactions. | Manual partial deletion is rejected instead of guessed at. |
+| Transaction boundary | Commit per user; one atomic commit | One transaction | Failure cannot leave only part of the demo dataset. | A single error rolls back all seed work. |
+
+#### Problems I Encountered
+
+- Argon2 hashes use random salts, so blindly updating demo passwords would change rows on every run.
+- Rebuilding seed history would conflict with the append-only transaction rule.
+- Ruff requested mechanical formatting and import ordering in the new database test.
+
+#### How I Diagnosed Them
+
+- I compared password hashes before and after the second seed run.
+- I traced reconciliation requirements back to the transaction log being the source of truth.
+- Ruff identified the exact test file requiring mechanical changes.
+
+#### How I Solved Them
+
+- Existing hashes are retained when the public credential verifies and parameters remain current.
+- Account history is created only with a new complete account pair; existing pairs keep later
+  activity.
+- Partial account pairs fail and roll back instead of risking an inconsistent reconstruction.
+- I applied Ruff's import and formatting correction.
+
+#### Tests I Added
+
+- Seed twice and assert stable row counts and unchanged valid hashes.
+- Verify all public demo credentials against stored Argon2id hashes.
+- Confirm each customer owns checking and savings accounts.
+- Reconcile every account's signed transactions with its stored balance.
+- Confirm every transfer has two correctly typed rows sharing its ID.
+- Confirm printed output contains public credentials but no Argon2 hash.
+
+Result: `25 passed, 1 existing warning`.
+
+#### Commands I Used
+
+```bash
+cd backend
+uv run python -m app.seed
+uv run python -m app.seed
+uv run ruff format --check app tests alembic
+uv run ruff check app tests alembic
+uv run pytest -q
+uv run alembic check
+```
+
+#### Files I Changed
+
+- `backend/app/seed.py`
+- `backend/tests/db/test_seed.py`
+- `backend/README.md`
+- `docs/MY_WORKFLOW.md`
+- `docs/PROGRESS.md`
+
+#### Security or Reliability Considerations
+
+- Demo credentials are intentionally public and isolated from generated local environment secrets.
+- Only password hashes are persisted; seed output never prints hashes.
+- Synthetic identities use the reserved `.test` domain.
+- Reconciliation holds for every seeded account.
+- Seed failures roll back atomically, and reruns do not delete transaction history.
+
+#### What I Would Do Differently
+
+I would order password hashing immediately before seed data in the original plan so the
+implementation sequence matches the dependency graph without crossing milestone numbers.
+
+#### Questions I Still Have
+
+- Phase 9 must choose whether session-token hashing uses the existing session secret as a pepper or
+  plain SHA-256 for indexed lookup.
+
+#### Next Step
+
+Review and commit Phase 7. M2 is then complete; continue M3 with Phase 9 only after this seed batch
+is committed. Do not begin session-token work in this phase.
+
 ---
 
 ## Long-Term Logs
@@ -968,6 +1083,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D8 | 2026-06-29 | Use integer primary keys, named domain enums, and no implicit ORM delete cascades | Phase 5 model design | Integer vs UUID; strings vs enums; cascades vs explicit retention | These choices keep the schema teachable while preserving domain validity and append-only history. | IDs remain enumerable and require strict authorization; enum changes need migrations; future deletions must be explicit. |
 | D9 | 2026-06-29 | Resolve Alembic runtime URLs from settings and inject test URLs explicitly | Phase 6 migration safety | URL in config; process env override; Alembic config attribute | Credentials remain outside source control and migration tests cannot silently target development. | CLI commands require application settings; tests construct a dedicated Alembic config for the isolated database. |
 | D10 | 2026-06-29 | Complete Phase 8 password hashing before Phase 7 seed data | Phase 7 requires Argon2id-hashed demo credentials | Hash inline and refactor; sequence Phase 8 first | Reusing one tested security primitive avoids temporary duplicate credential code. | M3 begins before M2 closes; after the Phase 8 commit, work returns to Phase 7 before Phase 9. |
+| D11 | 2026-06-29 | Seed fixed synthetic users and varied reconciliation-safe history without deleting existing account activity | Phase 7 demo data | Minimal opening balances; delete/rebuild; create-once history | Stable natural keys and create-once history make reruns safe while preserving append-only transactions. | Public `.test` credentials are fixed; partial account-pair drift fails; full pre-submission reset would require an explicit destructive workflow. |
 
 ### Debugging Log
 

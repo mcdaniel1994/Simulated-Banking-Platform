@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M3 dependency work; M2 Phase 7 remains pending
-- Current phase: Phase 8 — Password hashing with Argon2id (complete, sequenced early)
-- Current task: Review and commit the completed Phase 8 dependency
-- Last completed: Phase 8 — Password hashing with Argon2id
-- Next action: Review and commit Phase 8, then return to Phase 7 seed data
+- Current milestone: M2 — Database (complete); M3 in progress
+- Current phase: Phase 7 — Deterministic, idempotent seed (complete)
+- Current task: Review and commit the completed Phase 7 batch
+- Last completed: Phase 7 — Deterministic, idempotent seed
+- Next action: Review and commit Phase 7, then begin Phase 9 separately
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -21,7 +21,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 |---|---|---|---|---|
 | M0 — Decisions & Prep | COMPLETE | 2026-06-29 | 2026-06-29 | D1–D4 recorded and committed |
 | M1 — Repo & Backend Foundation | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 1–3 complete |
-| M2 — Database | IN PROGRESS | 2026-06-29 |  | Phases 4–6 complete; Phase 7 remains |
+| M2 — Database | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 4–7 complete |
 | M3 — Authentication & Authorization | IN PROGRESS | 2026-06-29 |  | Phase 8 completed early as a Phase 7 dependency |
 | M4 — Banking Domain | NOT STARTED |  |  |  |
 | M5 — Admin Backend | NOT STARTED |  |  |  |
@@ -195,22 +195,27 @@ Completion evidence:
   explicitly removes PostgreSQL enum types so re-upgrade is clean. Seed data remains Phase 7.
 
 ### Phase 7 — Deterministic, idempotent seed
-Status: NOT STARTED
-- [ ] Create admin + ≥2 customers (hashed passwords)
-- [ ] CHECKING + SAVINGS per customer with non-zero balances
-- [ ] Record opening balances as DEPOSIT transactions
-- [ ] Add a spread of historical transactions
-- [ ] Make the script idempotent
-- [ ] Print demo credentials
-- [ ] Add idempotency + reconciliation tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
+Status: COMPLETE
+- [x] Create admin + ≥2 customers (hashed passwords)
+- [x] CHECKING + SAVINGS per customer with non-zero balances
+- [x] Record opening balances as DEPOSIT transactions
+- [x] Add a spread of historical transactions
+- [x] Make the script idempotent
+- [x] Print demo credentials
+- [x] Add idempotency + reconciliation tests
+- [x] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
+- Tests: `25 passed, 1 existing warning`; Ruff format and lint checks passed; `alembic check`
+  reported no model/schema drift.
+- Manual verification: The development seed ran twice with stable counts of 3 users, 4 accounts,
+  2 transfers, and 12 transactions; every account's signed transaction sum equaled its stored
+  balance; each transfer had exactly two distinct transaction legs linked by `reference_id`.
 - Commit:
-- Notes:
+- Notes: Demo identities use synthetic `.test` addresses and intentionally public credentials.
+  Passwords are stored only as Argon2id hashes. Existing account pairs preserve later append-only
+  activity on rerun rather than deleting history. M2 is complete.
 
 ---
 
@@ -224,14 +229,14 @@ Status: COMPLETE
 - [x] Ensure no plaintext/hash logging
 - [x] Add unit tests
 - [x] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `22 passed, 1 existing warning`; Ruff format and lint checks passed.
 - Manual verification: A non-secret smoke check confirmed Argon2id with 19,456 KiB memory,
   2 iterations, and parallelism 1; the correct password verified, a wrong password failed, and a
   current hash did not require rehashing.
-- Commit:
+- Commit: `ed43249 feat(security): add Argon2id password hashing and verification`
 - Notes: Phase 8 was intentionally sequenced before Phase 7 using the implementation plan's
   explicit dependency option. The module performs no logging and treats malformed hashes as
   authentication failures. Session-token work remains Phase 9 and was not started.
