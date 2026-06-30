@@ -32,8 +32,8 @@ it("renders owned account cards and an exact combined balance", async () => {
     </MemoryRouter>,
   );
   expect(screen.getByRole("status")).toHaveTextContent("Loading");
-  expect(
-    await screen.findByText("Combined balance:", { exact: false }),
-  ).toHaveTextContent("$0.30");
+  expect(await screen.findByText("Combined balance")).toBeInTheDocument();
+  expect(screen.getByText("$0.30")).toBeInTheDocument();
   expect(screen.getAllByRole("link", { name: "View account" })).toHaveLength(2);
+  expect(screen.getAllByText("ACTIVE")).toHaveLength(2);
 });

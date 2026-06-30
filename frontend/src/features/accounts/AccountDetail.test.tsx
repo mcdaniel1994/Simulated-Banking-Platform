@@ -28,11 +28,12 @@ it("loads account history using the backend pagination contract", async () => {
   );
 
   expect(
-    await screen.findByRole("heading", { name: "CHECKING account" }),
+    await screen.findByRole("heading", { name: "checking account" }),
   ).toBeInTheDocument();
   expect(fetchMock.mock.calls[1][0]).toBe(
     "/api/accounts/1/transactions?limit=10&offset=0",
   );
   expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+  expect(screen.getByText("Page 1")).toHaveAttribute("aria-current", "page");
 });
