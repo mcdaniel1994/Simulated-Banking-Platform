@@ -1,9 +1,11 @@
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
 
 // The development proxy preserves relative /api URLs, matching the production single-origin design.
 export default defineConfig({
-  plugins: [react()],
+  // Tailwind runs at build time only; React remains the sole browser UI runtime.
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
       "/api": {
