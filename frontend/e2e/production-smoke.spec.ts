@@ -53,7 +53,7 @@ test("administrator reaches the protected dashboard and logs out", async ({
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(
-    page.getByRole("heading", { name: "Admin dashboard" }),
+    page.getByRole("heading", { name: "Learning bank activity" }),
   ).toBeVisible();
   await expectSecureSessionCookie(context);
 

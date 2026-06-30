@@ -67,7 +67,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-ivory-50 text-ink-950">
       <a
-        className="fixed left-4 top-4 z-[60] -translate-y-24 rounded-md bg-white px-4 py-2 font-semibold text-forest-950 shadow-lg transition focus:translate-y-0"
+        className="fixed left-4 top-4 z-[60] inline-flex min-h-11 -translate-y-24 items-center rounded-md bg-white px-4 py-2 font-semibold text-forest-950 shadow-lg transition focus:translate-y-0"
         href="#main-content"
       >
         Skip to main content
