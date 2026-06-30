@@ -51,13 +51,6 @@ body {
   min-height: 100vh;
 }
 
-main {
-  width: min(68rem, calc(100% - 2rem));
-  margin: 0 auto;
-  padding: 5rem 0;
-}
-
-nav,
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -65,36 +58,9 @@ nav,
   align-items: center;
 }
 
-nav {
-  padding: 1rem max(1rem, calc((100% - 68rem) / 2));
-  background: #163f34;
-  color: white;
-}
-
-nav a {
-  color: white;
-}
-
-nav button {
-  margin-left: auto;
-}
-
-form {
-  display: grid;
-  gap: 1rem;
-  max-width: 28rem;
-}
-
-label {
-  display: grid;
-  gap: 0.35rem;
-  font-weight: 700;
-}
-
 input,
 select,
 button {
-  padding: 0.7rem;
   font: inherit;
 }
 

@@ -35,8 +35,9 @@ describe("authentication flow", () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
     expect(
-      screen.getByText("Enter a valid email and password."),
+      screen.getByText("Enter a valid email address."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Enter your password.")).toBeInTheDocument();
   });
 
   it("renders customer navigation from the SQL-backed current user", async () => {
@@ -62,6 +63,38 @@ describe("authentication flow", () => {
         screen.queryByRole("link", { name: "Admin" }),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("opens and closes the accessible mobile navigation", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 2,
+          email: "alex.customer@demo.bank.test",
+          first_name: "Alex",
+          last_name: "Carter",
+          role: "CUSTOMER",
+          is_active: true,
+        }),
+      )
+      .mockResolvedValueOnce(Response.json([]));
+    renderApp("/dashboard");
+    await screen.findByText("No accounts are available.");
+
+    const menuButton = screen.getByRole("button", {
+      name: "Open navigation menu",
+    });
+    await userEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("navigation", {
+        name: "Mobile primary navigation",
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    expect(menuButton).toHaveFocus();
   });
 
   it("shows the backend's safe generic login failure", async () => {

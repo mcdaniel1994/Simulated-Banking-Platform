@@ -16,6 +16,7 @@ import {
   NotFoundPage,
   UnauthorizedPage,
 } from "../pages/StaticPages";
+import { PageState } from "../components/ui/PageState";
 import type { UserRole } from "../types/api";
 
 function RequireAuth({
@@ -26,7 +27,14 @@ function RequireAuth({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  if (loading) return <p role="status">Checking session…</p>;
+  if (loading)
+    return (
+      <PageState
+        kind="loading"
+        message="Resolving your secure server-side session."
+        title="Checking session"
+      />
+    );
   if (!user) return <Navigate to="/login" replace />;
   // Role checks improve navigation only; every protected API call is authorized again by FastAPI.
   if (role && user.role !== role)
