@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import { CustomerDashboard } from "../features/accounts/CustomerDashboard";
 import { AccountDetail } from "../features/accounts/AccountDetail";
+import { MoneyForm, TransferForm } from "../features/money/MoneyForms";
 import { AppLayout } from "../layouts/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
 import {
@@ -49,6 +50,30 @@ export function AppRoutes() {
           element={
             <RequireAuth role="CUSTOMER">
               <AccountDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="accounts/:accountId/deposit"
+          element={
+            <RequireAuth role="CUSTOMER">
+              <MoneyForm operation="deposit" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="accounts/:accountId/withdraw"
+          element={
+            <RequireAuth role="CUSTOMER">
+              <MoneyForm operation="withdraw" />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="transfer"
+          element={
+            <RequireAuth role="CUSTOMER">
+              <TransferForm />
             </RequireAuth>
           }
         />

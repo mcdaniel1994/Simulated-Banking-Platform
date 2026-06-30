@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M8 — Customer Frontend
-- Current phase: Phase 31 — Account detail and transaction history (complete)
-- Current task: Begin Phase 32 money forms
-- Last completed: Phase 31 — Account detail and transaction history
-- Next action: Implement Phase 32 only
+- Current phase: Phase 32 — Money interfaces (complete)
+- Current task: Begin Phase 33 admin interface
+- Last completed: Phase 32 — Deposit, withdrawal, and transfer interfaces
+- Next action: Implement Phase 33 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -724,24 +724,24 @@ Status: COMPLETE
 Completion evidence:
 - Tests: `8 passed`; lint, type-check, and production build passed.
 - Manual verification: account links route to owned detail/history views with responsive controls.
-- Commit: recorded in the Phase 32 update after the Phase 31 commit is created.
+- Commit: `de5873d feat(frontend): add account detail and paginated transaction history`
 - Notes: history uses backend `limit=10&offset=` pagination; guessed account IDs remain protected
   by the backend ownership dependency.
 
 ### Phase 32 — Deposit / withdrawal / transfer interfaces
-Status: NOT STARTED
-- [ ] Deposit/withdrawal/transfer forms with validation
-- [ ] Submit via client (CSRF header); refetch balances
-- [ ] Map server errors to field/form messages
-- [ ] Add form + CSRF + error-render tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Deposit/withdrawal/transfer forms with validation
+- [x] Submit via client (CSRF header); refetch balances
+- [x] Map server errors to field/form messages
+- [x] Add form + CSRF + error-render tests
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `9 passed`; formatting, ESLint, TypeScript, and build passed.
+- Manual verification: forms are linked from account detail and return to refetched detail/history.
+- Commit: recorded in the Phase 33 update after the Phase 32 commit is created.
+- Notes: exact string amounts and CSRF headers are asserted; server errors remain authoritative.
 
 ---
 

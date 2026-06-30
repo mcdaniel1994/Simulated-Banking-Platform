@@ -2944,6 +2944,16 @@ the UI explicitly covers loading, empty, and safe error states.
 
 ---
 
+### Entry — 2026-06-29 — Phase 32: Money Interfaces
+
+Deposit, withdrawal, and transfer forms normalize user input without `Number` money arithmetic and
+send every mutation through the CSRF-aware API client. Successful operations return to account
+detail so both balance and append-only history refetch. Backend field/domain errors become concise
+form messages; account activity, ownership, sufficient funds, and transfer atomicity remain server
+rules.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
