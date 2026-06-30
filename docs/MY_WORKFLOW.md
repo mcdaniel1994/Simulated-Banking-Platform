@@ -2991,6 +2991,56 @@ Stop at the frontend/E2E-complete checkpoint. Phase 36 deployment work has not s
 
 ---
 
+### Entry — 2026-06-29 — Phase 36: Dockerize the Backend
+
+#### What I Worked On
+
+I created a multi-stage backend image from the locked uv dependencies and kept migrations outside
+the web-process command. Compose now retains the original PostgreSQL-only workflow while adding a
+one-shot `migrate` service and a health-checked backend service.
+
+#### Architectural Fit and Decisions
+
+The web image contains only application/runtime files and runs as the dedicated unprivileged
+`banking` user. Containers use PostgreSQL's Compose service name instead of host `localhost`.
+`alembic upgrade head` must complete before the API starts; keeping it as a deploy job avoids
+multiple replicas racing to migrate. Secrets remain runtime environment values from the ignored
+root `.env`, never image layers.
+
+#### Problems I Encountered
+
+Docker's local credential helper hung while resolving public images. I diagnosed it by isolating a
+direct pull, then used an empty temporary Docker client configuration for anonymous public-image
+pulls. The first container start also found the Phase 35 Uvicorn process still holding port 8000;
+I stopped only that stale process and preserved PostgreSQL plus all developer data.
+
+#### Verification
+
+- Compose configuration parsed successfully.
+- The locked backend image built to 65 MB for `linux/arm64`.
+- The migration service completed successfully against the existing development database.
+- The backend health check became healthy and `/api/health` returned `{"status":"ok"}`.
+- Container identity was `uid=100(banking) gid=101(banking)`.
+- Ruff format/lint passed; all 116 backend tests passed with the one documented warning; Alembic
+  reported no schema drift.
+
+#### Files I Changed
+
+- `backend/Dockerfile`
+- `backend/.dockerignore`
+- `compose.yaml`
+- `backend/README.md`
+- `docs/IMPLEMENTATION_PLAN.md`
+- `docs/PROGRESS.md`
+- `docs/MY_WORKFLOW.md`
+
+#### Next Step
+
+Commit Phase 36, then implement Phase 37 with the recorded nginx D3 decision. Do not start M13 or
+M14.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I

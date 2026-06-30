@@ -73,6 +73,23 @@ separate `simulated_banking_dev` and `simulated_banking_test` databases. The ini
 runs only when the dedicated PostgreSQL volume is empty. The container bootstrap administrator is
 separate from the non-superuser `banking_user` identity used by the application and tests.
 
+Phase 36 also supports running the migrated backend in Docker without changing that database-only
+workflow:
+
+```bash
+cd ..
+docker compose build backend migrate
+docker compose up -d postgres
+docker compose run --rm migrate
+docker compose up -d backend
+curl http://127.0.0.1:8000/api/health
+```
+
+The one-shot `migrate` service runs `alembic upgrade head` before the API starts. Keeping migration
+execution separate from the web process avoids races when a deployment later runs multiple API
+replicas. Both services receive secrets at runtime from the ignored root `.env`; no credential is
+stored in the image.
+
 Run backend commands from this directory:
 
 ```bash
@@ -102,7 +119,8 @@ transaction history.
 
 ## Current State
 
-The backend has reached the Phase 27 BACKEND-COMPLETE checkpoint. Authentication, server-side
+The backend has reached the Phase 27 BACKEND-COMPLETE checkpoint and has a production-oriented
+container image from Phase 36. Authentication, server-side
 sessions, CSRF, role and ownership authorization, account and transaction reads, atomic deposits,
 withdrawals and transfers, reconciliation/concurrency verification, and administrator management
 routes are implemented. The full API contract is available through OpenAPI/Swagger and is frozen

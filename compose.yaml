@@ -19,5 +19,51 @@ services:
       retries: 10
       start_period: 5s
 
+  migrate:
+    build:
+      context: ./backend
+    environment:
+      # Containers reach PostgreSQL by its Compose service name, never through host localhost.
+      DATABASE_URL: postgresql+psycopg://${BANKING_DB_USER:?BANKING_DB_USER is required}:${BANKING_DB_PASSWORD:?BANKING_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      ENV: development
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${BANKING_DB_USER:?BANKING_DB_USER is required}:${BANKING_DB_PASSWORD:?BANKING_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-30}
+      SESSION_ABSOLUTE_HOURS: ${SESSION_ABSOLUTE_HOURS:-12}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-[]}
+      CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:-csrf_token}
+      ENV: ${ENV:-development}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Python is already present, so the health check adds no package solely for curl/wget.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
 volumes:
   banking_postgres_data:

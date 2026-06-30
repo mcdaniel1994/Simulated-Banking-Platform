@@ -76,7 +76,9 @@ the spec and is *not* repeated as an open decision.
   phase**. Listed so it is settled before M11, not earlier.
 - **Options:** (a) Caddy (automatic HTTPS certificates, minimal config); (b) nginx (ubiquitous,
   more manual TLS).
-- **Recommendation:** **(a) Caddy** for auto-TLS, per SPEC §17.
+- **Recorded decision:** **(b) nginx**, selected in Phase 0 and documented in
+  `MY_WORKFLOW.md`. The project intentionally accepts manual certificate provisioning in exchange
+  for learning the more widely used nginx configuration model.
 - **Blocks:** Ph37 only.
 
 ### D4 — Repository-layer depth
@@ -181,7 +183,7 @@ Simulated-Banking-Platform/
 ├── README.md                         # Ph38
 ├── .env.example                      # Ph3  (real .env is git-ignored)
 ├── docker-compose.yml                # Ph36 (local Postgres for dev; backend image)
-├── Caddyfile                         # Ph37 (or nginx.conf) — reverse proxy / single origin
+├── deploy/nginx/                     # Ph37 — reverse proxy / single origin
 ├── docs/
 │   ├── IMPLEMENTATION_PLAN.md        # this file
 │   ├── PROGRESS.md
@@ -269,7 +271,7 @@ models, and first migration; settling them prevents an early rebuild.
 **Implementation Tasks:**
 1. Decide D1 idle/absolute values; write them down.
 2. Decide D2 (recommended: include minimal AuditEvent).
-3. Decide D3 (recommended: Caddy) — can be revisited before M11.
+3. Decide D3 (recorded choice: nginx) — can be revisited before M11.
 4. Decide D4 (recommended: lightweight helpers).
 5. Record all four in the Architecture Decision Log with context + consequences.
 **Testing Required:** none (decisions only).
@@ -1124,15 +1126,16 @@ pooled connections to Supabase; the free-tier idle-pause caveat.
 `/api` to FastAPI, with TLS, Supabase Postgres, migrations, and seed (SPEC §17, §21.13).
 **Why this phase comes now:** Single origin is what makes `HttpOnly` + `SameSite=Strict` cookies
 work cleanly (SPEC §17); it is the final infra step before docs.
-**Concepts to Learn:** reverse proxying; TLS termination (Caddy auto-certs per D3); same-origin
+**Concepts to Learn:** reverse proxying; nginx TLS termination per D3; same-origin
 cookie behavior; production migrations + seed; pooler connection + idle-pause keep-alive.
-**Decisions to Confirm:** D3 (Caddy vs nginx); domain; whether a keep-alive guards the idle-pause.
-**Files or Areas Expected to Change:** `Caddyfile` (or `nginx.conf`); deploy scripts/notes;
+**Decisions to Confirm:** domain; certificate provisioning; whether a keep-alive guards the
+idle-pause. D3 itself is resolved to nginx.
+**Files or Areas Expected to Change:** `deploy/nginx/`; deploy scripts/notes;
 production `.env` (not committed).
 **Implementation Tasks:**
 1. Build the SPA; have the proxy serve the static build at `/`.
 2. Proxy `/api/*` to the backend container (same origin).
-3. Terminate TLS (Caddy auto-certificates).
+3. Terminate TLS in nginx using externally provisioned certificate/key files.
 4. Point the backend at the Supabase pooler URL; run `alembic upgrade head`; run the seed.
 5. Verify cookies are `Secure` and `SameSite=Strict` in production.
 **Testing Required:** smoke: the deployed site serves the SPA and the API on one origin over HTTPS;

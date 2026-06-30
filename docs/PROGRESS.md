@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M10 — Frontend & E2E Testing
-- Current phase: Phase 35 — End-to-end happy path (complete)
-- Current task: FRONTEND/E2E-COMPLETE checkpoint satisfied
-- Last completed: Phase 35 — End-to-end happy path
-- Next action: Stop before Phase 36; begin deployment only with explicit authorization
+- Current milestone: M11 — Deployment
+- Current phase: Phase 36 — Dockerize the backend (complete)
+- Current task: Phase 36 verified; continue to Phase 37
+- Last completed: Phase 36 — Dockerize the backend
+- Next action: Build and verify the nginx single-origin deployment stack
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -26,11 +26,11 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
 | M5 — Admin Backend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 24–26 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | COMPLETE | 2026-06-29 | 2026-06-29 | Checkpoint satisfied |
-| M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
-| M8 — Customer Frontend | IN PROGRESS | 2026-06-29 |  | Phase 30 complete |
+| M7 — Frontend Foundation & Auth | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 28–29 complete |
+| M8 — Customer Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 30–32 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
-| M11 — Deployment | NOT STARTED |  |  |  |
+| M11 — Deployment | IN PROGRESS | 2026-06-29 |  | Phase 36 complete |
 | M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
@@ -701,10 +701,10 @@ Completion evidence:
 Status: COMPLETE
 - [x] Fetch accounts; render cards
 - [x] Combined balance (string-safe)
-- [ ] Loading/empty/error states
-- [ ] Add dashboard component tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+- [x] Loading/empty/error states
+- [x] Add dashboard component tests
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
 - Tests: `7 passed`; formatting, ESLint, TypeScript, and build passed.
@@ -805,25 +805,31 @@ Completion evidence:
 ## M11 — Deployment `[SUBMISSION]`
 
 ### Phase 36 — Dockerize the backend
-Status: NOT STARTED
-- [ ] Backend `Dockerfile`
-- [ ] Compose file (local Postgres + backend)
-- [ ] Migration step (`alembic upgrade head`)
-- [ ] Build + run; health from container
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Backend `Dockerfile`
+- [x] Compose file (local Postgres + backend)
+- [x] Migration step (`alembic upgrade head`)
+- [x] Build + run; health from container
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: backend `116 passed, 1 documented warning`; Ruff format/lint passed; Alembic reported no
+  model/schema drift; Compose configuration validated.
+- Manual verification: the 65 MB `linux/arm64` image built from the locked runtime dependencies;
+  the one-shot migration service exited successfully; the backend became healthy and
+  `GET /api/health` returned `{"status":"ok"}` from the container. `id` confirmed the web process
+  runs as unprivileged `uid=100(banking)`.
+- Commit: `build(docker): containerize the FastAPI backend with migration step`
+- Notes: `docker compose up -d postgres` remains supported for the existing local database-only
+  workflow. The local Docker credential helper hung during public pulls, so verification used an
+  empty temporary Docker client config; no project credential or repository file was changed.
 
 ### Phase 37 — Single-origin reverse proxy + HTTPS + Supabase
 Status: NOT STARTED
 - [ ] Proxy serves SPA at `/`
 - [ ] Proxy `/api/*` to backend (same origin)
-- [ ] TLS termination (Caddy auto-cert per D3)
+- [ ] TLS termination (nginx with externally provisioned certificate/key per D3)
 - [ ] Supabase pooler URL; `alembic upgrade head`; seed
 - [ ] Verify prod cookies `Secure` + `SameSite=Strict`
 - [ ] Deploy smoke test
@@ -897,7 +903,7 @@ Status: NOT STARTED
 |---|---|---|---|---|
 | D1 | Session lifetimes (idle/absolute) | 30 min / 12 h | Ph3, Ph9–11, Ph16 | Yes — 30 min / 12 h |
 | D2 | AuditEvent in MVP vs defer | Include minimal | Ph5/6, money/admin phases, Ph27 | Yes — include minimal |
-| D3 | Reverse proxy Caddy vs nginx | Caddy (auto-TLS) | Ph37 | Yes — nginx |
+| D3 | Reverse proxy Caddy vs nginx | nginx (recorded decision) | Ph37 | Yes — nginx |
 | D4 | Repository-layer depth | Lightweight helpers | Ph18–26 layout | Yes — lightweight helpers |
 | D5 | Sync vs async SQLAlchemy | Sync | Ph4 onward | Yes — synchronous SQLAlchemy |
 
