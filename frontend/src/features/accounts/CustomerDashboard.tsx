@@ -32,7 +32,12 @@ export function CustomerDashboard() {
       </p>
       <div className="cards">
         {accounts.map((account) => (
-          <article className="panel" key={account.id}>
+          <article
+            className="panel"
+            key={account.id}
+            data-account-id={account.id}
+            data-balance={account.balance}
+          >
             <h2>{account.account_type}</h2>
             <p>Account ending {account.account_number.slice(-4)}</p>
             <p>{formatUsd(account.balance)}</p>

@@ -36,7 +36,13 @@ export function AccountDetail() {
     <>
       <Link to="/dashboard">Back to accounts</Link>
       <h1>{account.account_type} account</h1>
-      <p className="panel">Balance: {formatUsd(account.balance)}</p>
+      <p
+        className="panel"
+        data-testid="account-balance"
+        data-balance={account.balance}
+      >
+        Balance: {formatUsd(account.balance)}
+      </p>
       <div className="row">
         <Link to={`/accounts/${account.id}/deposit`}>Demo deposit</Link>
         <Link to={`/accounts/${account.id}/withdraw`}>Withdraw</Link>
@@ -46,7 +52,7 @@ export function AccountDetail() {
       {transactions.length === 0 && offset === 0 ? (
         <p>No transactions yet.</p>
       ) : (
-        <ul>
+        <ul aria-label="Transaction history">
           {transactions.map((transaction) => (
             <li key={transaction.id}>
               {transaction.transaction_type}: {formatUsd(transaction.amount)} —{" "}

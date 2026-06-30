@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M10 — Frontend & E2E Testing
-- Current phase: Phase 34 — Consolidated frontend tests (complete)
-- Current task: Begin Phase 35 end-to-end happy path
-- Last completed: Phase 34 — Frontend component tests
-- Next action: Implement Phase 35 only
+- Current phase: Phase 35 — End-to-end happy path (complete)
+- Current task: FRONTEND/E2E-COMPLETE checkpoint satisfied
+- Last completed: Phase 35 — End-to-end happy path
+- Next action: Stop before Phase 36; begin deployment only with explicit authorization
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -29,7 +29,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
 | M8 — Customer Frontend | IN PROGRESS | 2026-06-29 |  | Phase 30 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
-| M10 — Frontend & E2E Testing | IN PROGRESS | 2026-06-29 |  | Phase 34 complete |
+| M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
 | M11 — Deployment | NOT STARTED |  |  |  |
 | M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
@@ -780,22 +780,25 @@ Status: COMPLETE
 Completion evidence:
 - Tests: `12 passed` across 7 files; Prettier, ESLint (zero warnings), TypeScript, and build passed.
 - Manual verification: component matrix complements the completed real-browser role checks.
-- Commit: recorded in the Phase 35 update after the Phase 34 commit is created.
+- Commit: `3b69266 test(frontend): cover auth, dashboard, money forms, CSRF, and errors`
 - Notes: same-account transfers are rejected before mutation; safe backend login errors render.
 
 ### Phase 35 — End-to-end happy path
-Status: NOT STARTED
-- [ ] Seed known state
-- [ ] login → dashboard → deposit → withdraw → transfer → verify history
-- [ ] Assert balances/history after operations
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Seed known state
+- [x] login → dashboard → deposit → withdraw → transfer → verify history
+- [x] Assert balances/history after operations
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: Playwright Chromium `1 passed`; frontend `12 passed`; backend `116 passed, 1 documented
+  warning`; Prettier, ESLint, TypeScript, Vite build, Ruff, and Alembic drift gates passed.
+- Manual verification: real FastAPI/Vite/PostgreSQL flow asserted source and destination balance
+  deltas plus DEPOSIT, WITHDRAWAL, and TRANSFER_OUT history.
+- Commit: recorded after the Phase 35 commit is created.
+- Notes: the test reads current seeded demo balances and makes small additive changes without
+  destructive database reset. Failure traces/screenshots and readiness-gated servers are configured.
 
 ---
 

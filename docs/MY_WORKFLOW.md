@@ -2973,6 +2973,24 @@ without lint warnings.
 
 ---
 
+### Entry — 2026-06-29 — Phase 35: End-to-End Happy Path
+
+Playwright now exercises one real customer journey against Vite, FastAPI, and PostgreSQL. The test
+does not destructively reset the developer database: it reads current demo balances, deposits
+`10.00`, withdraws `5.00`, transfers `1.00`, and proves exact source/destination deltas plus the
+new history types. Server readiness is checked automatically, while failure traces and screenshots
+stay in ignored diagnostic directories.
+
+The final regression pass produced 12 frontend tests, one Chromium E2E, and all 116 backend tests.
+Formatting, linting, type-checking, production build, Ruff, and Alembic drift gates all passed. The
+existing FastAPI TestClient/httpx deprecation warning remains the only known warning.
+
+#### Next Step
+
+Stop at the frontend/E2E-complete checkpoint. Phase 36 deployment work has not started.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I

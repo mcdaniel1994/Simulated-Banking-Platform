@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // The development proxy preserves relative /api URLs, matching the production single-origin design.
 export default defineConfig({
@@ -13,6 +13,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Browser journeys run under Playwright; Vitest owns only isolated component/unit files.
+    exclude: [...configDefaults.exclude, "e2e/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/tests/setup.ts",
