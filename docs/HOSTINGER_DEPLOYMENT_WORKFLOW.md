@@ -24,18 +24,17 @@ points, and security boundaries.
 - Hostinger state: VPS is running Ubuntu 24.04.4 LTS; public IP, SSH username, and port were
   verified in hPanel but are intentionally not recorded in this public-repository document
 - Coolify state: Coolify is already installed on the VPS
-- Planned delivery path: connect the public GitHub repository to Coolify and deploy from the
-  reviewed Compose configuration
+- Delivery path: public GitHub repository through Coolify using the reviewed Compose configuration
 - Current access method: VS Code Remote SSH using the VPS root username/IP and password
 - Coolify repository state: `compose.coolify.yaml`, the internal nginx target, and the environment
   template are implemented and locally verified
 - GitHub state: the repository is public at
-  `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; remote `main` matched local commit
-  `f88fb35`, and GitHub reported zero secret-scanning alerts after publication
-- Current external task: connect the public GitHub repository to Coolify
-- Current stopping point: do not deploy until the domain and Supabase values are ready
-- Not started externally: Coolify application setup, DNS, Supabase, production environment,
-  deployment, live smoke test, and video recording
+  `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; Coolify deployed commit `05d0148`
+- Current external task: record and publish the required demonstration video
+- Current stopping point: follow the existing video checklist without starting M13/M14 work
+- Completed externally: Coolify application setup, DNS, Supabase, production environment,
+  deployment, trusted HTTPS, seed, and the live customer deposit/persistence flow
+- Not started externally: recorded demo video
 
 ## Deployment Architecture Adjustment — Approved
 
@@ -248,18 +247,16 @@ application environment variable.
 Goal: assign the real `https://` domain to the application gateway service so Coolify's proxy
 requests and renews the Let's Encrypt certificate.
 
-Current state: `https://bank.forgehub.cloud` is assigned only to `gateway`. Before the first
-application deployment, public TLS still presents Coolify/Traefik's fallback certificate
-(`TRAEFIK DEFAULT CERT`), so trusted certificate issuance is not yet claimed. The healthy
-`coolify-proxy` runs Traefik v3.6, owns host ports 80/443, and has a Let's Encrypt ACME resolver.
-No router/labels for this hostname exist before deployment. Although port 8080 is bound by the
-proxy on the host, an external TCP probe timed out, so it is not publicly reachable.
+Current state: `https://bank.forgehub.cloud` is assigned only to `gateway`. The first successful
+deployment created the Traefik router and issued a browser-trusted certificate for the hostname.
+The healthy `coolify-proxy` runs Traefik v3.6 and owns host ports 80/443. Although port 8080 is
+bound by the proxy on the host, an external TCP probe timed out, so it is not publicly reachable.
 
 Evidence:
 
 - [x] Production domain assigned only to `gateway`
-- [ ] Certificate matches the deployment hostname
-- [ ] Certificate chain is trusted by a normal browser
+- [x] Certificate matches the deployment hostname
+- [x] Certificate chain is trusted by a normal TLS client
 - [x] Coolify/Traefik owns certificate issuance and renewal through its Let's Encrypt resolver
 - [x] No application container mounts or stores the public TLS private key
 - [x] Application nginx listens only on its internal HTTP port
@@ -276,19 +273,26 @@ Use Coolify's deployment flow after validating the equivalent lifecycle:
 
 Do not run an unreviewed Alembic downgrade or destructively reset the production database.
 
+Current state: after correcting the concrete Shared Pooler URL, the migration completed
+successfully, backend became healthy, and gateway started. The resource reports Running/healthy.
+The deterministic demonstration seed completed successfully through the running backend container.
+
 ## Stage 9 — Live Verification
 
 Evidence:
 
-- [ ] HTTP redirects to HTTPS
-- [ ] `/` serves the React SPA
-- [ ] `/api/health` returns HTTP 200 without stripping `/api`
-- [ ] Customer login, dashboard, deposit, and logout succeed
-- [ ] Administrator login, dashboard, and logout succeed
-- [ ] Session cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, and `Path=/`
-- [ ] Revoked session reuse returns 401
-- [ ] Production Playwright smoke passes against the trusted URL
-- [ ] No secrets appear in browser output, container logs, or committed files
+- [x] HTTP redirects to HTTPS
+- [x] `/` serves the React SPA
+- [x] `/api/health` returns HTTP 200 without stripping `/api`
+- [x] Customer login, dashboard, and deposit succeed
+- [x] Deposit updates the displayed balance/history and persists in Supabase
+- [x] Customer logout succeeds and protected dashboard access redirects to login
+- [x] Administrator login and dashboard succeed
+- [x] Administrator logout succeeds and protected dashboard access redirects to login
+- [x] Session cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, host-only, and `Path=/`
+- [x] Revoked session reuse returns 401
+- [x] Production Playwright smoke passes against the trusted URL
+- [x] No secrets appear in application/browser output, container logs, or committed files
 
 ## Stage 10 — Close the Submission Blockers
 
@@ -312,4 +316,11 @@ Append verified milestones here without secrets.
 | 2026-06-30 | 4 — Domain and DNS | COMPLETE | `bank.forgehub.cloud` A record created; system, Cloudflare, and Google resolvers return the VPS IPv4 address; no AAAA record; TCP ports 80 and 443 reachable | Prepare the Supabase production database |
 | 2026-06-30 | 5 — Supabase database | COMPLETE | East US region confirmed near VPS; unused Data API disabled; Shared Pooler session endpoint on port 5432; password and TLS SQLAlchemy URL stored in password manager; local tests remain isolated | Assign the production domain only to the Coolify gateway |
 | 2026-06-30 | 6 — Coolify environment | COMPLETE | Six production variables entered and verified; secrets masked/literal; cookie domain blank; automated previews not enabled; no values recorded in Git or this journal | Complete the remaining Stage 5 region/isolation confirmation |
-| 2026-06-30 | 7 — Domain and TLS | IN PROGRESS | Gateway-only domain assigned; healthy Traefik v3.6 owns 80/443 and has Let's Encrypt configured; no pre-deploy router exists; fallback certificate remains; port 8080 is not externally reachable | Publish the reviewed corrections, deploy once, and monitor router/ACME logs |
+| 2026-06-30 | 7 — Domain and TLS | COMPLETE | Gateway-only domain assigned; Traefik v3.6 owns 80/443; trusted certificate issued; HTTP redirects to HTTPS; HTTPS SPA and `/api/health` return 200 | Seed deliberate demonstration data |
+| 2026-06-30 | 8 — First deployment | BLOCKED SAFELY | Two attempts stopped at `migrate`; container log identified literal `POOLER_HOST` template token causing DNS failure; no database connection or schema change occurred | Replace all generic URL tokens with the concrete Shared Pooler values and verify without printing them |
+| 2026-06-30 | 8 — Deployment recovery | COMPLETE | Concrete URL corrected; migration exited successfully; backend healthy; gateway running; resource healthy; public SPA/API health verified; deterministic demo seed succeeded | Begin live customer/admin functional and security verification |
+| 2026-06-30 | 9 — Customer verification | COMPLETE | Live customer login and dashboard succeeded; a simulated deposit updated the balance and transaction history; the corresponding production data change was visible in Supabase; logout returned to login and protected dashboard reuse was denied | Verify the administrator flow |
+| 2026-06-30 | 9 — Administrator verification | COMPLETE | Live administrator login succeeded; the dashboard loaded customer, account, balance, and transaction summaries; logout returned to login and protected dashboard reuse was denied | Verify production cookie attributes and revoked API-session behavior |
+| 2026-06-30 | 9 — Cookie verification | COMPLETE | Browser storage showed the `__Host-session` cookie with HttpOnly, Secure, SameSite Strict, path `/`, and host-only scope; the inspected session was immediately revoked by logout | Run the automated production smoke |
+| 2026-06-30 | 9 — Automated smoke | COMPLETE | Production Playwright smoke passed 2/2 against trusted HTTPS; both roles authenticated and logged out; secure cookie assertions passed; customer mutation succeeded; post-logout `/api/auth/me` returned 401 | Complete the production secret-output audit |
+| 2026-06-30 | 9 — Secret-output audit | COMPLETE | Coolify deployment/container logs contained no database URL, session secret, password, connection string, or traceback; tracked URL/secret matches were placeholders or isolated test values; no application output exposed secrets | Record and publish the required demonstration video |

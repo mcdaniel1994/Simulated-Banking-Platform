@@ -3287,6 +3287,75 @@ other domains mean the first deployment must monitor certificate logs rather tha
 The proxy also binds host port 8080, but an external TCP probe timed out, so that management port
 is not publicly reachable.
 
+The first two Coolify deployments failed safely because `migrate` exited before backend/gateway
+startup. The outer deployment log showed only exit code 1; reading the exited migration
+container's own log revealed the actual cause: `DATABASE_URL` still contained the literal generic
+token `POOLER_HOST`, so DNS resolution failed before PostgreSQL authentication or Alembic work.
+This reinforced that masked presence is not value validation: production URLs must be checked for
+concrete scheme, user, host, port, database, TLS query, and absence of every placeholder token
+before redeployment.
+
+The next URL attempt still failed because an extra `@` made the parsed hostname begin with `@`,
+and the TLS query was absent. I corrected the URL to use the concrete project-qualified user,
+URL-safe password boundary, one credential/host delimiter, the Shared Pooler hostname on port 5432,
+and `sslmode=require`. The following deployment completed its migration, waited for a healthy
+backend, and then started the gateway.
+
+External verification then proved HTTP redirects to HTTPS, a normal TLS client trusts the
+certificate for `bank.forgehub.cloud`, the SPA returns 200 through nginx, and `/api/health`
+returns `{"status":"ok"}`. Demo data remains intentionally unseeded until the separate seed action.
+
+I then opened the running backend container and ran `python -m app.seed` once. The deterministic,
+idempotent seed completed and reported the expected synthetic administrator and customer accounts.
+No real customer data or production credential was introduced.
+
+I verified the first live business transaction through the public application rather than treating
+container health as sufficient proof. The demonstration customer could authenticate, load the
+dashboard, and submit a simulated deposit. The displayed balance and transaction history updated,
+and the corresponding change appeared in Supabase. This confirms the complete production write
+path—trusted HTTPS through Traefik, internal nginx routing, FastAPI validation/business logic, and
+TLS database persistence—works with the deployed configuration. Logout, administrator behavior,
+cookie attributes, revoked-session reuse, and the automated production smoke remain separate
+verification gates rather than being inferred from this successful transaction.
+
+I then logged out the demonstration customer and confirmed the application returned to the login
+page. Attempting to reopen the protected customer dashboard redirected back to login, proving the
+browser no longer retained usable authenticated access after logout. This verifies the observable
+customer-session revocation behavior without relying only on the logout response itself.
+
+The demonstration administrator also authenticated successfully through the public application.
+The administrator dashboard loaded its customer, account, balance, and transaction summaries,
+confirming the deployed role boundary and administrative read path operate against the production
+database. Administrator logout remains an independent check so successful login is not mistaken
+for complete session-lifecycle verification.
+
+Administrator logout then returned the browser to login, and reopening the protected administrator
+dashboard redirected back to login. Customer and administrator role flows now both have live
+login, role-appropriate dashboard, logout, and protected-route denial evidence. The remaining
+Stage 9 work focuses on direct security evidence and the automated production smoke rather than
+additional feature behavior.
+
+Browser storage inspection confirmed the production session cookie uses the `__Host-session`
+name, path `/`, host-only scope, `HttpOnly`, `Secure`, and `SameSite=Strict`. The readable CSRF
+cookie remained separate, which is required for the frontend's double-submit request flow. Because
+the inspection screenshot accidentally included cookie values, I treated the session as exposed
+and logged out immediately; this revoked the server-side session instead of assuming the screenshot
+was harmless. No cookie value was added to the repository documentation.
+
+I ran the repository's production Playwright configuration against
+`https://bank.forgehub.cloud`; both Chromium tests passed. The suite independently repeated
+customer and administrator authentication, asserted the secure session-cookie contract, performed
+a one-cent customer deposit, logged both roles out, and confirmed direct reuse of each revoked
+session against `/api/auth/me` returned 401. This automated check converts the manual observations
+into a repeatable production gate while keeping its intentional data drift to one simulated cent.
+
+The final Stage 9 review found no production database URL, session secret, password, connection
+string, or traceback in the Coolify deployment/container logs. A tracked-file scan found only
+documented placeholders, local examples, and isolated test values—not production credentials.
+Together with the completed manual flows and two passing production smoke tests, this satisfies
+the live deployment verification gate. The remaining submission blocker is now the user-recorded
+and publicly accessible demonstration video; M13 hardening and M14 extensions remain untouched.
+
 ---
 
 ## Questions for Review

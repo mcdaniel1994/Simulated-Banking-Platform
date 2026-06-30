@@ -9,10 +9,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Prepare the reviewed deployment-journal/template corrections for publication before the first deploy
-- Last completed: Traefik v3.6 proxy/ports/ACME ownership verified; pre-deployment fallback certificate explained
-- Next action: Obtain explicit permission to commit and push the reviewed non-secret changes, then deploy once while monitoring router and ACME logs
-- Current blocker: live deployment access/values and the required user-recorded demo video
+- Current task: Record and publish the required demonstration video
+- Last completed: Stage 9 live deployment verification, automated smoke, and secret-output audit
+- Next action: Follow `docs/DEMO_VIDEO.md`, upload the video, and add its public URL
+- Current blocker: required user-recorded demo video
 - Last updated: 2026-06-30
 
 ## Milestone progress
@@ -30,7 +30,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M8 — Customer Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 30–32 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
-| M11 — Deployment | BLOCKED | 2026-06-29 |  | Manual and Coolify repository paths verified; live deploy external |
+| M11 — Deployment | COMPLETE | 2026-06-29 | 2026-06-30 | Coolify deployment healthy; trusted HTTPS, SPA, API health, migration, seed, and live database write verified |
 | M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Repository work complete; criteria 13/15 external |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
