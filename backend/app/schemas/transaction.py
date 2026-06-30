@@ -11,6 +11,7 @@ class TransactionResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    # account_id identifies the owned account in a combined feed; owner relationships stay hidden.
     id: int
     account_id: int
     transaction_type: TransactionType
@@ -25,5 +26,6 @@ class TransactionResponse(BaseModel):
     def serialize_money(cls, value: Decimal | str) -> str:
         """Preserve cents exactly without introducing binary floating point."""
 
+        # Movement and resulting snapshot use the same stable two-decimal public contract.
         decimal_value = value if isinstance(value, Decimal) else Decimal(value)
         return format(decimal_value, ".2f")

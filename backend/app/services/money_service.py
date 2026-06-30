@@ -21,6 +21,7 @@ def _lock_owned_account(
 ) -> Account:
     """Lock one customer-owned account for the current money transaction."""
 
+    # Read ownership and balance only after PostgreSQL grants the row lock.
     account = db.scalar(
         select(Account)
         .where(
@@ -44,6 +45,7 @@ def deposit(
     """Atomically increase one active account and append its history and audit rows."""
 
     try:
+        # Re-lock because the route's earlier ownership dependency performed an unlocked read.
         account = _lock_owned_account(
             db,
             account_id=account_id,
@@ -52,11 +54,13 @@ def deposit(
         if account.status is not AccountStatus.ACTIVE:
             raise InactiveAccountError
 
+        # Validate the resulting stored value before PostgreSQL NUMERIC could overflow.
         updated_balance = account.balance + amount
         if updated_balance > MAX_MONEY_AMOUNT:
             raise ValidationError(fields={"amount": "Resulting balance exceeds supported limit"})
 
         account.balance = updated_balance
+        # Balance cache, append-only history, and audit evidence share one commit.
         db.add_all(
             [
                 Transaction(
@@ -100,11 +104,13 @@ def withdraw(
         )
         if account.status is not AccountStatus.ACTIVE:
             raise InactiveAccountError
+        # Checking funds under the lock prevents concurrent requests from using stale balances.
         if account.balance < amount:
             raise InsufficientFundsError
 
         updated_balance = account.balance - amount
         account.balance = updated_balance
+        # Any failed commit rolls back the balance, history, and audit together.
         db.add_all(
             [
                 Transaction(

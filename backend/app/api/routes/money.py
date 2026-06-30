@@ -48,6 +48,7 @@ def withdrawal_route(
 ) -> Account:
     """Apply one CSRF-protected withdrawal without allowing an overdraft."""
 
+    # The locked service check—not the route or frontend—enforces sufficient funds.
     return withdraw(
         db,
         customer=customer,

@@ -21,6 +21,7 @@ RECENT_TRANSACTION_DAYS = 30
 
 @dataclass(frozen=True)
 class AdminDashboardSummary:
+    # Dataclasses carry service results without coupling aggregate SQL to Pydantic or HTTP.
     customer_count: int
     account_count: int
     total_simulated_balance: Decimal
@@ -40,6 +41,7 @@ class AdminCustomerDetail:
 def get_dashboard_summary(db: DatabaseSession) -> AdminDashboardSummary:
     """Compute administrator aggregates directly in PostgreSQL."""
 
+    # Separate scalar queries keep each dashboard definition explicit and independently testable.
     recent_cutoff = datetime.now(UTC) - timedelta(days=RECENT_TRANSACTION_DAYS)
     customer_count = db.scalar(
         select(func.count()).select_from(User).where(User.role == UserRole.CUSTOMER)
@@ -61,6 +63,7 @@ def get_dashboard_summary(db: DatabaseSession) -> AdminDashboardSummary:
 def list_customers(db: DatabaseSession) -> list[User]:
     """List managed customers without including administrator identities."""
 
+    # Filtering in SQL prevents administrator identities from reaching response shaping.
     return list(db.scalars(select(User).where(User.role == UserRole.CUSTOMER).order_by(User.id)))
 
 
@@ -73,6 +76,7 @@ def get_customer_detail(
 ) -> AdminCustomerDetail:
     """Load one customer drill-down without reusing customer ownership dependencies."""
 
+    # Admin visibility is distinct from ownership, but only CUSTOMER identities are managed here.
     customer = db.scalar(
         select(User).where(
             User.id == user_id,
@@ -82,6 +86,7 @@ def get_customer_detail(
     if customer is None:
         raise NotFoundError
 
+    # Accounts and history are separate so pagination applies only to the append-only feed.
     accounts = list(
         db.scalars(select(Account).where(Account.user_id == customer.id).order_by(Account.id))
     )
@@ -113,6 +118,7 @@ def set_customer_active_status(
 ) -> User:
     """Atomically change customer status and revoke sessions on deactivation."""
 
+    # Restricting this lookup to CUSTOMER prevents an admin from deactivating another admin.
     customer = db.scalar(
         select(User).where(
             User.id == user_id,
@@ -127,6 +133,7 @@ def set_customer_active_status(
     try:
         customer.is_active = is_active
         if not is_active:
+            # Bulk revocation makes every existing customer cookie unusable immediately.
             db.execute(
                 update(Session)
                 .where(
@@ -135,6 +142,7 @@ def set_customer_active_status(
                 )
                 .values(revoked_at=now)
             )
+        # State, session revocations, and audit evidence share one transaction boundary.
         db.add(
             AuditEvent(
                 actor=admin,
@@ -161,6 +169,7 @@ def set_account_status(
 ) -> Account:
     """Atomically freeze or unfreeze an account and record the admin action."""
 
+    # Admin management loads by ID without pretending the administrator owns the account.
     account = db.get(Account, account_id)
     if account is None:
         raise NotFoundError
@@ -168,6 +177,7 @@ def set_account_status(
     event_type = "account_frozen" if account_status is AccountStatus.FROZEN else "account_unfrozen"
     try:
         account.status = account_status
+        # Record the numeric ID and state, never the sensitive account number.
         db.add(
             AuditEvent(
                 actor=admin,

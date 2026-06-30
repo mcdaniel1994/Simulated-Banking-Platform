@@ -33,6 +33,7 @@ class DomainError(Exception):
         super().__init__(self.message)
 
 
+# Concrete types keep service code expressive while centralizing status and public wording.
 class ValidationError(DomainError):
     code = "VALIDATION_ERROR"
     default_message = "Request validation failed"
@@ -98,6 +99,7 @@ class InternalError(DomainError):
 def error_envelope(error: DomainError) -> dict[str, dict[str, Any]]:
     """Build the one public error shape consumed by every API client."""
 
+    # Serialize only public attributes—never an exception representation or traceback.
     return {
         "error": {
             "code": error.code,
@@ -133,6 +135,7 @@ async def request_validation_exception_handler(
 ) -> JSONResponse:
     """Describe invalid fields without echoing rejected passwords or other submitted values."""
 
+    # Framework details contain rejected input, so copy only location and a generic reason.
     fields: dict[str, str] = {}
     for detail in error.errors():
         location = ".".join(str(part) for part in detail["loc"] if part not in {"body", "query"})
@@ -149,6 +152,7 @@ async def http_exception_handler(
 ) -> JSONResponse:
     """Normalize framework-generated routing and authorization failures."""
 
+    # Translate Starlette defaults so clients never receive a second {"detail": ...} shape.
     if error.status_code == status.HTTP_404_NOT_FOUND:
         domain_error = NotFoundError()
     elif error.status_code == status.HTTP_401_UNAUTHORIZED:
@@ -189,6 +193,7 @@ async def catch_unexpected_exceptions(
 ) -> Response:
     """Convert unexpected failures before the outer server layer can log secret-bearing details."""
 
+    # Catching here prevents Uvicorn from re-logging the original message and traceback.
     try:
         return await call_next(request)
     except Exception as error:

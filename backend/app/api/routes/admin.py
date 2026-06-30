@@ -35,6 +35,7 @@ def admin_dashboard_route(
 ) -> AdminDashboardSummary:
     """Return aggregate statistics only to the authenticated SQL administrator."""
 
+    # The route enforces the role; aggregate definitions and SQL stay in the admin service.
     return get_dashboard_summary(db)
 
 
@@ -45,6 +46,7 @@ def list_customers_route(
 ) -> list[User]:
     """List every managed customer without exposing password or session state."""
 
+    # Response validation selects safe identity fields from the ORM users returned by the service.
     return list_customers(db)
 
 
@@ -58,6 +60,7 @@ def get_customer_detail_route(
 ) -> AdminCustomerDetail:
     """Return one customer's accounts and stable transaction page."""
 
+    # Shared query bounds keep admin and customer transaction pagination behavior aligned.
     return get_customer_detail(db, user_id=user_id, limit=limit, offset=offset)
 
 
@@ -71,6 +74,7 @@ def set_customer_status_route(
 ) -> User:
     """Activate or deactivate a customer, revoking sessions on deactivation."""
 
+    # CSRF and ADMIN checks finish before the service opens the status-change transaction.
     return set_customer_active_status(
         db,
         admin=admin,
@@ -89,6 +93,7 @@ def set_account_status_route(
 ) -> Account:
     """Freeze or unfreeze an account without granting the admin ownership."""
 
+    # This admin management path is intentionally separate from customer ownership dependencies.
     return set_account_status(
         db,
         admin=admin,

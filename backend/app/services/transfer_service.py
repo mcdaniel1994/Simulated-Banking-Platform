@@ -35,10 +35,12 @@ def transfer_money(
 ) -> Transfer:
     """Move money atomically between two owned accounts locked in deterministic order."""
 
+    # Reject before SQL so the service never attempts to lock one row twice.
     if source_account_id == destination_account_id:
         raise SameAccountTransferError
 
     try:
+        # Sorted lock acquisition prevents opposite-direction transfers from deadlocking.
         account_ids = sorted((source_account_id, destination_account_id))
         locked_accounts = list(
             db.scalars(
@@ -52,6 +54,7 @@ def transfer_money(
             )
         )
         if len(locked_accounts) != 2:
+            # Persist denial separately because the rejected transfer transaction is rolled back.
             db.rollback()
             record_permission_denied(
                 db,
@@ -65,6 +68,7 @@ def transfer_money(
         accounts_by_id = {account.id: account for account in locked_accounts}
         source = accounts_by_id[source_account_id]
         destination = accounts_by_id[destination_account_id]
+        # Status and funds are evaluated while both account rows remain locked.
         if (
             source.status is not AccountStatus.ACTIVE
             or destination.status is not AccountStatus.ACTIVE
@@ -77,6 +81,7 @@ def transfer_money(
         if destination_balance > MAX_MONEY_AMOUNT:
             raise ValidationError(fields={"amount": "Resulting balance exceeds supported limit"})
 
+        # Both balance changes remain uncommitted until the parent, legs, and audit are ready.
         source.balance -= amount
         destination.balance = destination_balance
         transfer = Transfer(
@@ -86,8 +91,10 @@ def transfer_money(
             status=TransferStatus.COMPLETED,
         )
         db.add(transfer)
+        # Flush assigns the parent ID used as the shared reference on both ledger legs.
         db.flush()
 
+        # Parent, two balance snapshots, two legs, and audit form one atomic unit.
         db.add_all(
             [
                 Transaction(
@@ -135,6 +142,7 @@ def get_owned_transfer(
 ) -> Transfer:
     """Load a transfer only when both account roles belong to the customer."""
 
+    # Aliases apply ownership independently to source and destination in one query.
     source = aliased(Account)
     destination = aliased(Account)
     transfer = db.scalar(
@@ -148,6 +156,7 @@ def get_owned_transfer(
         )
     )
     if transfer is None:
+        # Missing and non-owned parents stay indistinguishable while still producing an audit.
         record_permission_denied(
             db,
             actor=customer,

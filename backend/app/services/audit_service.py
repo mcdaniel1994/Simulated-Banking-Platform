@@ -19,6 +19,7 @@ def record_permission_denied(
     """Persist and safely log an authorization denial without sensitive request data."""
 
     try:
+        # Denials are durable security events even though the requested business work is rejected.
         db.add(
             AuditEvent(
                 actor=actor,
@@ -33,6 +34,7 @@ def record_permission_denied(
         db.rollback()
         raise
 
+    # Only server-owned IDs and categories reach stdout; request data is excluded.
     logger.warning(
         "permission_denied actor_user_id=%s entity_type=%s entity_id=%s",
         actor.id,

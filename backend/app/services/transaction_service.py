@@ -13,6 +13,7 @@ def list_account_transactions(
 ) -> list[Transaction]:
     """Page newest-first history for one account already authorized by ownership."""
 
+    # ID breaks equal-timestamp ties so offset pages retain a deterministic order.
     return list(
         db.scalars(
             select(Transaction)
@@ -33,7 +34,7 @@ def list_customer_transactions(
 ) -> list[Transaction]:
     """Page newest-first history across only the authenticated customer's accounts."""
 
-    # The ownership predicate is part of SQL so no other customer's history enters the service.
+    # The ownership join keeps every other customer's history outside the service.
     return list(
         db.scalars(
             select(Transaction)

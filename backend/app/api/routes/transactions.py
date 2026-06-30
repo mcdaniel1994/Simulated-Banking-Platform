@@ -28,6 +28,7 @@ def list_account_transactions_route(
 ) -> list[Transaction]:
     """Return one owned account's stable newest-first history page."""
 
+    # OwnedAccount resolves IDOR protection before the service applies ordering and pagination.
     return list_account_transactions(db, account=account, limit=limit, offset=offset)
 
 
@@ -40,4 +41,5 @@ def list_customer_transactions_route(
 ) -> list[Transaction]:
     """Return stable newest-first history across the customer's accounts."""
 
+    # The SQL-backed customer principal becomes the ownership predicate for the combined feed.
     return list_customer_transactions(db, customer=customer, limit=limit, offset=offset)

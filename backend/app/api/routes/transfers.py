@@ -21,6 +21,7 @@ def create_transfer_route(
 ) -> Transfer:
     """Atomically transfer money between two active accounts owned by the customer."""
 
+    # CSRF and authentication are HTTP concerns; locking and atomic movement belong to the service.
     return transfer_money(
         db,
         customer=customer,
@@ -38,4 +39,5 @@ def get_transfer_route(
 ) -> Transfer:
     """Return one transfer whose source and destination are both customer-owned."""
 
+    # The service verifies ownership of both account roles before returning the parent record.
     return get_owned_transfer(db, customer=customer, transfer_id=transfer_id)
