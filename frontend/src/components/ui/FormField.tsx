@@ -32,7 +32,11 @@ export function FormField({
       </div>
       {children}
       {error && (
-        <p className="text-sm font-medium text-danger-700" id={`${id}-error`}>
+        <p
+          className="text-sm font-medium text-danger-700"
+          id={`${id}-error`}
+          role="alert"
+        >
           {error}
         </p>
       )}
