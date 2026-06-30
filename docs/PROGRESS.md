@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M6 — Backend Finalization (complete)
-- Current phase: Phase 27 — Backend finalization (complete)
-- Current task: BACKEND-COMPLETE checkpoint satisfied
-- Last completed: Phase 27 — Error consistency, redaction, audit wiring, full backend pass
-- Next action: Stop at the checkpoint; begin Phase 28 only with explicit authorization
+- Current milestone: M7 — Frontend Foundation & Auth
+- Current phase: Phase 28 — Frontend project foundation + typed API client (complete)
+- Current task: Begin Phase 29 authentication flow
+- Last completed: Phase 28 — Frontend project foundation + typed API client
+- Next action: Implement Phase 29 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -26,7 +26,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M4 — Banking Domain | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 17–23 complete |
 | M5 — Admin Backend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 24–26 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | COMPLETE | 2026-06-29 | 2026-06-29 | Checkpoint satisfied |
-| M7 — Frontend Foundation & Auth | NOT STARTED |  |  |  |
+| M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
 | M8 — Customer Frontend | NOT STARTED |  |  |  |
 | M9 — Admin Frontend | NOT STARTED |  |  |  |
 | M10 — Frontend & E2E Testing | NOT STARTED |  |  |  |
@@ -659,20 +659,22 @@ Completion evidence:
 ## M7 — Frontend Foundation & Auth `[SUBMISSION]`
 
 ### Phase 28 — Frontend project foundation + typed API client
-Status: NOT STARTED
-- [ ] Scaffold Vite + React + TS with lint/format
-- [ ] Typed API client (credentials + CSRF header injection)
-- [ ] Money parsing utils + error-envelope mapper
-- [ ] Dev proxy / CORS (dev only)
-- [ ] Add client unit/component tests (CSRF, errors, money)
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Scaffold Vite + React + TS with lint/format
+- [x] Typed API client (credentials + CSRF header injection)
+- [x] Money parsing utils + error-envelope mapper
+- [x] Dev proxy / CORS (dev only)
+- [x] Add client unit/component tests (CSRF, errors, money)
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `4 passed`; ESLint, Prettier, TypeScript, and production build gates passed.
+- Manual verification: the Vite `/api` proxy targets the local FastAPI service and the landing
+  shell reports health connectivity without exposing authentication material.
+- Commit: recorded in the Phase 29 update after the Phase 28 commit is created.
+- Notes: requests always include cookie credentials; only the readable CSRF cookie is inspected;
+  money totals use integer cents represented by `bigint`.
 
 ### Phase 29 — Auth flow (login, auth state, protected routes, logout)
 Status: NOT STARTED

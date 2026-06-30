@@ -9,6 +9,12 @@ venv/
 
 # Python caches and compiled files
 __pycache__/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/*.tsbuildinfo
+e2e/test-results/
+e2e/playwright-report/
 *.py[cod]
 *$py.class
 

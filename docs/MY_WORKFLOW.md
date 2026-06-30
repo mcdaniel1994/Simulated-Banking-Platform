@@ -2874,6 +2874,49 @@ docker compose up --build
 
 ---
 
+### Entry — 2026-06-29 — Phase 28: Frontend Foundation and Typed API Client
+
+#### What I Worked On
+
+I scaffolded the React/TypeScript Vite application and centralized browser requests in a typed
+native-fetch client. The client always includes cookies, echoes the readable CSRF token only on
+unsafe requests, maps the stable backend error envelope, and keeps API money as decimal strings.
+
+#### Concepts I Learned
+
+- The HttpOnly session cookie is intentionally invisible to JavaScript; `GET /auth/me` will be the
+  only source of authenticated-user state.
+- `bigint` integer cents can total formatted money without binary floating-point drift.
+- A development proxy keeps `/api` relative in development and the production single-origin
+  architecture.
+
+#### Tests I Added
+
+Vitest coverage proves credential and CSRF behavior, stable error mapping, exact money conversion
+and addition, USD formatting, and safe form-value normalization.
+
+#### Commands I Used
+
+```bash
+cd frontend
+npm test -- --run
+npm run lint
+npm run typecheck
+npm run build
+npm run format:check
+```
+
+#### Security or Reliability Considerations
+
+The frontend never reads or stores the session cookie, tokens, or trusted roles. Malformed error
+responses collapse to safe wording, and all server money remains a decimal string at the API edge.
+
+#### Next Step
+
+Implement Phase 29 authentication state, login, guards, role navigation, and server-side logout.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
