@@ -1,24 +1,24 @@
-# Northstar Learning Bank
+# Northstar Bank — Simulated Banking Platform
 
 #### Source Code: [GitHub](https://github.com/mcdaniel1994/Simulated-Banking-Platform)
-#### Live Demo: Not deployed yet
+#### Live Demo: [https://bank.forgehub.cloud/login](https://bank.forgehub.cloud/login)
 #### Video Demo: Not recorded yet — follow [the demo-video checklist](docs/DEMO_VIDEO.md)
 
 ## Description
 
-Northstar Learning Bank is a full-stack simulated online banking application built as a CS50x
+Northstar Bank is a full-stack simulated online banking application built as a CS50x
 final project. It models the engineering problems behind banking software—authentication,
 authorization, exact money arithmetic, concurrent balance updates, transaction integrity, and
 auditability—without connecting to a real bank or moving real money.
 
 Customers can sign in with seeded credentials, view checking and savings accounts, page through
-transaction history, add demo funds, withdraw simulated money, and transfer between their own
-accounts. Administrators have a separate dashboard for aggregate statistics, customer drill-down,
-customer activation/deactivation, and account freeze/unfreeze controls. Administrators cannot use
-customer money operations, and customers cannot access administrator routes or another customer's
-accounts.
+transaction history, add funds, withdraw funds, and transfer between their own accounts.
+Administrators have a separate dashboard for aggregate statistics, customer drill-down, customer
+creation, customer activation/deactivation, and account freeze/unfreeze controls. Administrators
+cannot use customer money operations, and customers cannot access administrator routes or another
+customer's accounts.
 
-> **Simulated-money disclaimer:** This is educational software. It does not connect to financial
+> **Simulation disclaimer:** This application does not connect to financial
 > institutions, process real funds, provide financial services, or store real customer data. Never
 > enter real banking credentials or personal information.
 
@@ -56,7 +56,7 @@ The repository is organized as follows:
 - `deploy/nginx/`, `compose.yaml`, and `compose.production.yaml` define local and deployment
   container topologies.
 - `docs/` contains the implementation plan, progress evidence, engineering journal, deployment
-  runbook, acceptance checklist, and demo-video plan.
+  runbook, acceptance checklist, video opening card, and demo-video plan.
 
 ## Security Model
 
@@ -151,7 +151,8 @@ multiple replicas cannot race to change the schema.
 
 ## Production Deployment
 
-The selected deployment pushes this repository to GitHub and lets Coolify build
+The live deployment at [bank.forgehub.cloud](https://bank.forgehub.cloud/login) pulls this
+repository from GitHub and lets Coolify build
 `compose.coolify.yaml`. Coolify's proxy owns public HTTPS and certificate renewal; an internal
 nginx container serves the SPA at `/` and proxies `/api/*` unchanged to the private FastAPI
 container. PostgreSQL is reached through a TLS-enabled Supabase pooler URL.
@@ -161,8 +162,8 @@ be combined with Coolify because it binds host ports and owns TLS itself. Follow
 [the deployment runbook](docs/DEPLOYMENT.md) and the
 [Hostinger/Coolify workflow](docs/HOSTINGER_DEPLOYMENT_WORKFLOW.md).
 
-The repository contains no domain, VPS credentials, Supabase password, or production session
-secret. A real Coolify deployment must supply those external values.
+The repository contains no VPS credentials, Supabase password, production database URL, or
+production session secret. Coolify supplies those values through its masked environment settings.
 
 ## Testing
 
@@ -190,7 +191,7 @@ Against an already-running trusted HTTPS deployment:
 
 ```bash
 cd frontend
-PRODUCTION_BASE_URL=https://bank.example.com npm run test:e2e:production
+PRODUCTION_BASE_URL=https://bank.forgehub.cloud npm run test:e2e:production
 ```
 
 The complete acceptance evidence and any externally blocked criteria are recorded in
@@ -231,7 +232,8 @@ as required by the [CS50x 2026 final-project policy](https://cs50.harvard.edu/x/
 
 ## Submission Status
 
-Repository implementation and local verification are complete through Phase 38. The project is
-not yet ready to claim all submission criteria: the real VPS/Supabase/trusted-domain deployment and
-the required public/unlisted demonstration video remain external actions. See the submission
-checklist for the exact evidence and next steps.
+Repository implementation, trusted HTTPS deployment, Supabase persistence, and production
+verification are complete. The only remaining submission criterion is the required public or
+unlisted demonstration video. The prepared opening card is in
+[`docs/intro.md`](docs/intro.md), and the recording plan is in
+[`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md).

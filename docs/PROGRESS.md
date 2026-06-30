@@ -9,10 +9,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Publish and redeploy the approved admin-customer extension before recording video
-- Last completed: Local admin customer provisioning, professional UI refresh, and acceptance checks
-- Next action: Push the verified extension, redeploy through Coolify, then follow `docs/DEMO_VIDEO.md`
-- Current blocker: required user-recorded demo video after the refreshed application is deployed
+- Current task: Record and upload the required demonstration video
+- Last completed: Commit `71a9689` deployed; refreshed UI and Supabase persistence verified live
+- Next action: Display `docs/intro.md`, follow `docs/DEMO_VIDEO.md`, and upload public/unlisted
+- Current blocker: required user-recorded and uploaded demo video
 - Last updated: 2026-06-30
 
 ## Milestone progress
@@ -33,7 +33,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M11 — Deployment | COMPLETE | 2026-06-29 | 2026-06-30 | Coolify deployment healthy; trusted HTTPS, SPA, API health, migration, seed, and live database write verified |
 | M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Deployment complete; criterion 15 video remains external |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
-| M14 — Extensions | IN PROGRESS | 2026-06-30 |  | Approved admin provisioning and professional UI extension complete locally |
+| M14 — Extensions | IN PROGRESS | 2026-06-30 |  | Approved admin provisioning and professional UI extension complete in production |
 
 ---
 
@@ -826,13 +826,13 @@ Completion evidence:
   empty temporary Docker client config; no project credential or repository file was changed.
 
 ### Phase 37 — Single-origin reverse proxy + HTTPS + Supabase
-Status: BLOCKED (live deployment only; repository/local work complete)
+Status: COMPLETE
 - [x] Proxy serves SPA at `/`
 - [x] Proxy `/api/*` to backend (same origin)
 - [x] TLS termination (nginx with externally provisioned certificate/key per D3)
 - [x] Production-safe Supabase pooler, `alembic upgrade head`, and seed workflow
 - [x] Verify prod cookies `Secure` + `SameSite=Strict` in local HTTPS smoke
-- [ ] Deploy smoke test on the real VPS/domain/Supabase project
+- [x] Deploy smoke test on the real VPS/domain/Supabase project
 - [x] Record decisions in `MY_WORKFLOW.md`
 - [x] Commit the completed repository phase
 
@@ -846,8 +846,11 @@ Completion evidence:
   dashboards, `HttpOnly`/`Secure`/`SameSite=Strict` session cookies, one-cent demo deposit, logout,
   and 401 reuse after revocation.
 - Commit: `build(deploy): single-origin reverse proxy, HTTPS, and Supabase deploy`
-- Notes: A trusted certificate, DNS name, VPS access, Supabase pooler URL/password, and production
-  session secret were not available. No live deployment or Supabase connection is claimed.
+- External completion: Coolify deployed the application at `https://bank.forgehub.cloud`; trusted
+  TLS, migrations, seed, production cookies, session revocation, browser smoke, and Supabase
+  persistence were verified. The refreshed deployment is at commit `71a9689`.
+- Notes: The original local checkpoint above preceded access to the trusted certificate, DNS,
+  VPS, and Supabase values. Those external dependencies are now complete.
 
 ---
 
@@ -873,7 +876,7 @@ Completion evidence:
   locked Python packages and 278 npm packages, imported the backend, built the SPA, and parsed
   Compose. The final production-shaped containers rebuilt, migrated, seeded, became healthy, and
   returned `{"status":"ok"}` through nginx HTTPS.
-- Commit: `docs: add README, design write-up, AI citation, and demo video`
+- Repository documentation commit: `63efe0c`; final video URL/evidence commit remains pending.
 - Notes: `README.md`, `docs/DEMO_VIDEO.md`, and `docs/SUBMISSION_CHECKLIST.md` are complete.
   Criterion 13 is satisfied by the trusted-domain Coolify/Supabase deployment. Criterion 15 remains
   open because the recorded/uploaded video does not yet exist.
@@ -914,8 +917,9 @@ Approved extension evidence:
 - Tests: backend `122 passed`; frontend `21 passed`; local happy path `1 passed`; responsive
   desktop/mobile suite `4 passed`; Alembic reports no schema drift.
 - Manual verification: an administrator created a customer locally, and the new credentials and
-  checking account worked as expected.
-- Production smoke was intentionally not rerun because the refreshed commit is not deployed yet.
+  checking account worked as expected. Commit `71a9689` was then deployed through Coolify, and
+  live application mutations appeared in the Supabase database as expected.
+- Public entry point: `https://bank.forgehub.cloud/login`.
 
 ---
 

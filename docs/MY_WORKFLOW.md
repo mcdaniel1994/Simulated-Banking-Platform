@@ -3403,8 +3403,14 @@ new account and credentials worked.
 
 #### Next Step
 
-Publish the reviewed commits, redeploy through Coolify, verify the refreshed production interface,
-and then record the required demonstration video. Do not begin the remaining M13/M14 backlog.
+I pushed the reviewed commits and deployed commit `71a9689` through Coolify. The refreshed
+professional interface and administrator customer-creation workflow work at
+`https://bank.forgehub.cloud/login`, and application updates appear in the Supabase tables. This
+confirms the revised browser-to-FastAPI-to-Supabase path in production.
+
+The next step is to display `docs/intro.md`, record the required demonstration video using the
+split-screen application/Supabase plan, and provide the public or unlisted YouTube URL. Do not
+begin the remaining M13/M14 backlog.
 
 ---
 

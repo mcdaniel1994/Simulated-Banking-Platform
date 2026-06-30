@@ -1,12 +1,12 @@
 # Submission Acceptance Evidence
 
-Evidence was reviewed on 2026-06-29 against all 15 criteria in `SPEC.md` §21. “Satisfied” means the
-repository tests and/or local verification prove the criterion. “Blocked” means an external action
-is still required and is not being represented as complete.
+Evidence was reviewed through 2026-06-30 against all 15 criteria in `SPEC.md` §21. “Satisfied”
+means repository tests, local verification, and/or the live deployment prove the criterion.
+“Blocked” means an external action is still required and is not being represented as complete.
 
 | # | Status | Concrete evidence |
 |---|---|---|
-| 1 | Satisfied locally | Backend auth tests verify customer/admin login and `HttpOnly`, `Secure`, `SameSite=Strict` session cookies. The local HTTPS production smoke verified both roles and cookie attributes in Chromium. |
+| 1 | Satisfied | Backend tests and the trusted production smoke verify customer/admin login and `HttpOnly`, `Secure`, `SameSite=Strict` session cookies. |
 | 2 | Satisfied | Account/history API tests and the customer Playwright happy path verify accounts, balances, pagination, deposit, withdrawal, transfer, and exact balance deltas. |
 | 3 | Satisfied | Withdrawal and transfer tests assert `INSUFFICIENT_FUNDS` and unchanged balances/history/audits. |
 | 4 | Satisfied | Deposit/withdrawal/transfer status tests reject frozen/closed accounts; transfer tests reject identical accounts. |
@@ -16,32 +16,22 @@ is still required and is not being represented as complete.
 | 8 | Satisfied | Ownership tests return the same 404 for missing/non-owned accounts; role tests return 403 when a customer enters admin routes. |
 | 9 | Satisfied | Auth tests reuse the same cookie after logout and receive 401; admin deactivation tests prove all active customer sessions are revoked. |
 | 10 | Satisfied | CSRF tests reject missing/mismatched tokens with `CSRF_INVALID` and accept a matching cookie/header pair. |
-| 11 | Satisfied | Admin API/UI tests cover list, detail, deactivate/reactivate, freeze/unfreeze, CSRF, and the rule that admins are not account owners. |
+| 11 | Satisfied | Admin API/UI tests cover customer creation, list/detail, deactivate/reactivate, freeze/unfreeze, CSRF, and the rule that admins are not account owners. The creation flow was also verified through the deployed UI and Supabase. |
 | 12 | Satisfied | Error/audit tests enforce the common envelope, decimal-string money, sanitized validation, and absence of tokens, cookies, credentials, SQL, account numbers, and sensitive headers in errors/logs. |
-| 13 | **Blocked externally** | Manual and Coolify Compose/TLS/Supabase templates exist; local single-origin migration/seed/API/browser smoke passes. A real DNS name, Coolify deployment, trusted certificate, and Supabase pooler credentials were unavailable, so no live deployment is claimed. |
-| 14 | Satisfied | Full backend suite: 116 passed with one documented dependency warning. Frontend: 12 passed. Customer happy-path E2E: 1 passed. Local production HTTPS smoke: 2 passed. |
+| 13 | Satisfied | `https://bank.forgehub.cloud` serves the SPA and API through trusted HTTPS. Coolify deployed commit `71a9689`; migration and seed completed; the private backend and gateway are healthy; writes persist through the TLS Supabase pooler. |
+| 14 | Satisfied | Full backend suite: 122 passed with one documented dependency warning. Frontend: 21 passed. Customer happy-path E2E: 1 passed. Responsive desktop/mobile suite: 4 passed. Trusted production smoke: 2 passed. |
 | 15 | **Blocked externally** | Root README, design/trade-offs, install/deploy docs, and AI disclosure exist. The required at-most-three-minute video has a complete script/checklist but has not been recorded or uploaded. |
 
-## External Actions Required
-
-### Criterion 13
-
-1. Obtain a domain and point DNS at the VPS.
-2. Push the reviewed repository to GitHub and connect it to the existing Coolify installation.
-3. Configure `compose.coolify.yaml` with masked Coolify environment values.
-4. Supply the Supabase pooler URL/password and a random production session secret.
-5. Assign the trusted HTTPS domain to the Coolify `gateway` service, deploy, migrate, and seed.
-6. Run `PRODUCTION_BASE_URL=https://REAL_DOMAIN npm run test:e2e:production`.
-7. Record the live URL, cookie inspection, Supabase migration revision, and smoke results here.
+## External Action Required
 
 ### Criterion 15
 
-1. Fill the personal placeholders in `docs/DEMO_VIDEO.md`.
+1. Display the completed opening card in `docs/intro.md`.
 2. Record a video no longer than three minutes using the checklist.
 3. Upload it as public or unlisted, verify signed-out access, and add its URL to `README.md`.
 
 ## Submission Decision
 
-**Not all 15 criteria are satisfied.** Criteria 13 and 15 remain blocked by external deployment
-access/values and the user's recording/upload action. Do not submit or describe the project as
-fully complete until both are evidenced.
+**Fourteen of 15 criteria are satisfied.** Criterion 15 remains blocked only by the user's
+recording/upload action. Do not submit or describe the project as fully complete until the video
+is uploaded, linked in `README.md`, and verified while signed out.

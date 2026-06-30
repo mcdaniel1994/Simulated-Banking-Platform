@@ -1,6 +1,6 @@
 # Hostinger Deployment Workflow
 
-This document records the external deployment process for Northstar Learning Bank. It supplements
+This document records the external deployment process for Northstar Bank. It supplements
 `DEPLOYMENT.md` with the Hostinger-specific order of operations, evidence to capture, stopping
 points, and security boundaries.
 
@@ -29,11 +29,11 @@ points, and security boundaries.
 - Coolify repository state: `compose.coolify.yaml`, the internal nginx target, and the environment
   template are implemented and locally verified
 - GitHub state: the repository is public at
-  `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; Coolify deployed commit `05d0148`
+  `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; Coolify deployed commit `71a9689`
 - Current external task: record and publish the required demonstration video
 - Current stopping point: follow the existing video checklist without starting M13/M14 work
 - Completed externally: Coolify application setup, DNS, Supabase, production environment,
-  deployment, trusted HTTPS, seed, and the live customer deposit/persistence flow
+  deployment, trusted HTTPS, seed, refreshed admin/customer UI, and live Supabase persistence
 - Not started externally: recorded demo video
 
 ## Deployment Architecture Adjustment — Approved
@@ -79,8 +79,8 @@ remains the internal application gateway. `SPEC.md` has not been silently rewrit
   stripping `/api`.
 - Docker inspection confirms empty host port bindings for both gateway and backend.
 - The preserved manual nginx/TLS gateway target still builds.
-- Backend tests: 116 passed with the existing dependency warning.
-- Frontend tests: 12 passed; format, lint, type-check, and build gates pass.
+- Backend tests: 122 passed with the existing dependency warning.
+- Frontend tests: 21 passed; format, lint, type-check, and build gates pass.
 
 ## Stage 1 — Hostinger VPS and SSH Access (Complete)
 
@@ -288,6 +288,7 @@ Evidence:
 - [x] Deposit updates the displayed balance/history and persists in Supabase
 - [x] Customer logout succeeds and protected dashboard access redirects to login
 - [x] Administrator login and dashboard succeed
+- [x] Administrator customer creation succeeds and persists the new customer/account in Supabase
 - [x] Administrator logout succeeds and protected dashboard access redirects to login
 - [x] Session cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, host-only, and `Path=/`
 - [x] Revoked session reuse returns 401
@@ -296,12 +297,10 @@ Evidence:
 
 ## Stage 10 — Close the Submission Blockers
 
-1. Update `SUBMISSION_CHECKLIST.md` criterion 13 with the real deployment evidence.
-2. Follow `DEMO_VIDEO.md`, record the video, upload it as public/unlisted, and add the URL to
+1. Follow `DEMO_VIDEO.md`, record the video, upload it as public/unlisted, and add the URL to
    `README.md`.
-3. Mark criterion 15 complete only after the uploaded video works while signed out.
-4. Update `PROGRESS.md` and append the actual deployment results to `MY_WORKFLOW.md`.
-5. Run final gates, commit the evidence updates, and submit to CS50x.
+2. Mark criterion 15 complete only after the uploaded video works while signed out.
+3. Run final documentation checks, commit the video URL/evidence updates, and submit to CS50x.
 
 ## Deployment Journal
 
@@ -324,3 +323,4 @@ Append verified milestones here without secrets.
 | 2026-06-30 | 9 — Cookie verification | COMPLETE | Browser storage showed the `__Host-session` cookie with HttpOnly, Secure, SameSite Strict, path `/`, and host-only scope; the inspected session was immediately revoked by logout | Run the automated production smoke |
 | 2026-06-30 | 9 — Automated smoke | COMPLETE | Production Playwright smoke passed 2/2 against trusted HTTPS; both roles authenticated and logged out; secure cookie assertions passed; customer mutation succeeded; post-logout `/api/auth/me` returned 401 | Complete the production secret-output audit |
 | 2026-06-30 | 9 — Secret-output audit | COMPLETE | Coolify deployment/container logs contained no database URL, session secret, password, connection string, or traceback; tracked URL/secret matches were placeholders or isolated test values; no application output exposed secrets | Record and publish the required demonstration video |
+| 2026-06-30 | 9 — Refreshed application | COMPLETE | Coolify deployed commit `71a9689`; professional UI and admin customer creation are live; application mutations were observed in Supabase; public login and `/api/health` return 200 | Record and publish the required demonstration video |
