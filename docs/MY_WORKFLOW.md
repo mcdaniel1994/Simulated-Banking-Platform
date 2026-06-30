@@ -3208,6 +3208,85 @@ local commit `f88fb35`, the working tree was clean, and GitHub's secret-scanning
 returned zero alerts. The next step is to connect that Git source to Coolify. Live DNS, Supabase
 credentials, trusted TLS, browser smoke, and video evidence remain external.
 
+Stage 3 began by creating the `Northstar Learning Bank` Coolify project. Coolify created its
+default `production` environment at the same time. The project groups deployment resources, while
+the environment provides the production-scoped boundary in which the Compose application and its
+later environment values will live; creating this boundary did not deploy or expose the
+application.
+
+I connected the public GitHub repository on `main`, selected the Docker Compose build pack, retained
+the repository root as the base directory, and explicitly selected `/compose.coolify.yaml`.
+Coolify loaded the file successfully and recognized `migrate`, `seed`, `backend`, and `gateway`.
+Its per-service domain fields were all blank. This is the safe Stage 3 state: source topology is
+known, but no service is public and no container has started. The eventual domain belongs only to
+`gateway`; generating domains for the other services would break the intended trust boundary.
+
+The Git source screen confirmed Public GitHub, repository
+`mcdaniel1994/Simulated-Banking-Platform`, branch `main`, and revision `HEAD`. At this checkpoint,
+the verified branch tip is `0c334d3`, which includes the earlier Coolify configuration commit
+`f88fb35`. Using `HEAD` keeps Coolify aligned with the latest reviewed `main`; it also means future
+deployments must verify the branch tip before pressing Deploy rather than assuming the same commit
+will remain selected forever.
+
+For Stage 4, I selected `bank.forgehub.cloud` so the banking demo has a product-specific hostname
+without changing the existing root-domain records. I added only a `bank` A record pointing to the
+Hostinger VPS. The system resolver plus Cloudflare and Google public DNS all returned the expected
+VPS address, which confirms the record is publicly visible rather than merely saved in hPanel.
+DNS resolution alone does not prove that HTTP/HTTPS can reach Coolify, so ports 80 and 443 remain a
+separate verification step. Both ports accepted public TCP connections, and no AAAA record was
+published because IPv6 has not been configured and verified. These checks complete the DNS and
+network prerequisites without yet assigning the hostname to a Coolify service.
+
+Stage 5 began by creating a dedicated Supabase production project. I disabled the Data API because
+the browser never connects to Supabase and FastAPI uses SQLAlchemy/psycopg directly. This keeps
+FastAPI as the only application authorization boundary and avoids exposing an unused database API.
+The database password and complete connection string remain outside the repository and deployment
+journal.
+
+Supabase's current guidance distinguishes persistent backends from temporary serverless clients.
+Because Coolify runs a long-lived FastAPI process and the VPS connects over IPv4, I selected the
+Shared Pooler in session mode on port 5432. This mode supports prepared statements and preserves a
+session for each client connection. The existing deployment templates used transaction-mode port
+6543, so I corrected both examples and the runbook to session-mode port 5432 before entering any
+production values. Catching this at connection setup prevented a generic placeholder from silently
+becoming the production database policy.
+
+I stored the production database password and completed TLS SQLAlchemy URL only in the encrypted
+password manager. The repository journal records the format and storage decision, not either
+credential value.
+
+I generated a separate 256-bit production `SESSION_SECRET` locally and stored it in the same
+password-manager entry. It is independent of both the local-development secret and the Supabase
+password, and no value was copied into Git or the engineering journal.
+
+In Coolify, I replaced the required-variable diagnostic text with the real masked `DATABASE_URL`
+and verified all six production variables. The two secrets are literal values available to the
+Compose deployment, session lifetimes remain 30 minutes/12 hours, `COOKIE_DOMAIN` stays blank for
+the `__Host-` cookie, and the CSRF cookie name remains stable. I did not modify the Compose-owned
+`CORS_ORIGINS=[]` or `ENV=production` values.
+
+The Preview Deployments screen showed only the default URL template and manual pull-request loader.
+No preview deployment was active, and this Public Git source has no GitHub App/webhook preview
+integration. Coolify scopes preview variables separately from production variables, so the
+production credentials are not being supplied to a temporary pull-request container.
+
+I confirmed the Supabase East US region is reasonably close to the Hostinger VPS. The local
+environment audit also proved `TEST_DATABASE_URL` still targets the isolated local test database,
+so no test command is pointed at production. That completes the Supabase preparation boundary.
+
+I assigned `https://bank.forgehub.cloud` only to the Coolify `gateway` service. An external TLS
+probe reached Traefik but received `TRAEFIK DEFAULT CERT`, whose hostname does not match the
+application. This is not acceptable deployment evidence; it is the pre-deployment fallback state.
+Trusted certificate issuance remains open until the first controlled deployment applies the
+gateway proxy configuration and a normal TLS client validates the resulting chain.
+
+A read-only VPS inspection confirmed Coolify's healthy `coolify-proxy` runs Traefik v3.6 and owns
+host ports 80/443. It has a Let's Encrypt resolver but no router or Docker labels for the banking
+hostname before deployment, which explains the fallback certificate. Historical ACME errors for
+other domains mean the first deployment must monitor certificate logs rather than assume issuance.
+The proxy also binds host port 8080, but an external TCP probe timed out, so that management port
+is not publicly reachable.
+
 ---
 
 ## Questions for Review

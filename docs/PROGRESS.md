@@ -9,9 +9,9 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Connect the published GitHub repository to Coolify
-- Last completed: Public GitHub publication of verified Coolify deployment configuration
-- Next action: Create the Coolify application from `main` using `compose.coolify.yaml`
+- Current task: Prepare the reviewed deployment-journal/template corrections for publication before the first deploy
+- Last completed: Traefik v3.6 proxy/ports/ACME ownership verified; pre-deployment fallback certificate explained
+- Next action: Obtain explicit permission to commit and push the reviewed non-secret changes, then deploy once while monitoring router and ACME logs
 - Current blocker: live deployment access/values and the required user-recorded demo video
 - Last updated: 2026-06-30
 

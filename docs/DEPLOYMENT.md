@@ -104,15 +104,18 @@ blank so the backend can issue the host-only `__Host-session` cookie.
 
 ## Supabase Preparation
 
-Use the pooler URL supplied by Supabase, expressed with SQLAlchemy's psycopg driver:
+Use the Shared Pooler session-mode URL supplied by Supabase, expressed with SQLAlchemy's psycopg
+driver:
 
 ```text
-postgresql+psycopg://USER:PASSWORD@POOLER_HOST:PORT/postgres?sslmode=require
+postgresql+psycopg://USER:PASSWORD@POOLER_HOST:5432/postgres?sslmode=require
 ```
 
-Choose a Supabase region near the VPS. The backend is a long-lived process with a bounded
-SQLAlchemy pool; do not use a browser/API key as the database password. Never run tests against
-this URL.
+Session mode is selected because FastAPI is a persistent process with a bounded SQLAlchemy pool,
+and it retains prepared-statement support while providing IPv4 connectivity from the VPS. Do not
+substitute the transaction-mode port 6543, which is intended for temporary/serverless clients and
+does not support prepared statements. Choose a Supabase region near the VPS. Do not use a
+browser/API key as the database password. Never run tests against this URL.
 
 ## TLS Provisioning
 

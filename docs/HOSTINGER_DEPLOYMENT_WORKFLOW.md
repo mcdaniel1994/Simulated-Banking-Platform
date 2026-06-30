@@ -169,12 +169,14 @@ Goal: create a Coolify application from the Git repository using the Docker Comp
 
 Evidence:
 
-- [ ] Coolify project and production environment created
-- [ ] Public repository, GitHub App, or deploy-key connection selected appropriately
-- [ ] Correct repository and `main` branch selected
-- [ ] Docker Compose build pack selected
-- [ ] Deployment commit is at or after the Hostinger/Coolify configuration commit
-- [ ] Private backend and one-shot migration/seed services are not assigned public domains
+- [x] Coolify project and production environment created
+- [x] Public repository connection selected appropriately
+- [x] Correct repository and `main` branch selected
+- [x] Docker Compose build pack selected
+- [x] Coolify source revision is `HEAD` on `main`; verified branch tip `0c334d3` is after the
+  Hostinger/Coolify configuration commit `f88fb35`
+- [x] `migrate`, `seed`, `backend`, and `gateway` services recognized from `/compose.coolify.yaml`
+- [x] Private backend and one-shot migration/seed services are not assigned public domains
 
 Do not deploy until the Coolify-specific proxy/TLS configuration is committed and pushed.
 
@@ -184,31 +186,48 @@ Goal: point the chosen deployment hostname at the VPS before requesting a truste
 
 Evidence:
 
-- [ ] Deployment hostname selected
-- [ ] A record points to the VPS IPv4 address
-- [ ] AAAA record is added only if IPv6 is correctly configured
-- [ ] DNS resolution confirmed from outside the VPS
-- [ ] Ports 80 and 443 reach the VPS
+- [x] Deployment hostname selected: `bank.forgehub.cloud`
+- [x] A record points to the VPS IPv4 address
+- [x] No AAAA record added because IPv6 has not been configured and verified
+- [x] DNS resolution confirmed from outside the VPS through the system resolver, Cloudflare, and
+  Google
+- [x] Ports 80 and 443 reach the VPS
 
 ## Stage 5 — Supabase Production Database
 
 Goal: create the separate production PostgreSQL target and obtain its TLS pooler URL.
 
+Current state: the production Supabase project has been created. Its connection fields have not
+been entered into Coolify. The selected database region is East US (North Virginia), and the
+Shared Pooler session-mode endpoint has been identified at
+`aws-0-us-east-1.pooler.supabase.com:5432`.
+
 Evidence:
 
-- [ ] Supabase project created in a region reasonably close to the VPS
-- [ ] Pooler host/port identified
-- [ ] Production database password stored only in an approved secret location
-- [ ] SQLAlchemy URL uses `postgresql+psycopg` and `sslmode=require`
-- [ ] Test commands are not pointed at production
+- [x] Supabase project created
+- [x] Supabase East US region confirmed reasonably close to the VPS
+- [x] Shared Pooler session-mode host/port identified
+- [x] Production database password stored only in an approved password manager
+- [x] SQLAlchemy URL stored privately with `postgresql+psycopg` and `sslmode=require`
+- [x] Test commands remain pointed at the separate local test database, not production
 
 Never record the complete connection URL in this document.
+
+The deployment templates use Shared Pooler session mode on port 5432 because the Coolify backend
+is a persistent SQLAlchemy client and needs prepared-statement support. Transaction-mode port 6543
+is reserved for temporary/serverless clients and is not the selected path.
 
 ## Stage 6 — Coolify Environment Variables
 
 Goal: enter the required runtime values through Coolify's environment-variable interface. The
 Compose file must continue to declare required variables with `${VARIABLE:?}` so missing values
 fail before containers start.
+
+Current state: all six required production values have been entered and verified in Coolify.
+`DATABASE_URL` and `SESSION_SECRET` are masked/literal values, the session lifetime values match
+D1, `COOKIE_DOMAIN` is blank, and `CSRF_COOKIE_NAME` remains `csrf_token`. Automated preview
+deployments are not enabled, no pull request deployment is active, and Coolify keeps preview
+variables separate from production variables.
 
 Required runtime values:
 
@@ -229,13 +248,21 @@ application environment variable.
 Goal: assign the real `https://` domain to the application gateway service so Coolify's proxy
 requests and renews the Let's Encrypt certificate.
 
+Current state: `https://bank.forgehub.cloud` is assigned only to `gateway`. Before the first
+application deployment, public TLS still presents Coolify/Traefik's fallback certificate
+(`TRAEFIK DEFAULT CERT`), so trusted certificate issuance is not yet claimed. The healthy
+`coolify-proxy` runs Traefik v3.6, owns host ports 80/443, and has a Let's Encrypt ACME resolver.
+No router/labels for this hostname exist before deployment. Although port 8080 is bound by the
+proxy on the host, an external TCP probe timed out, so it is not publicly reachable.
+
 Evidence:
 
+- [x] Production domain assigned only to `gateway`
 - [ ] Certificate matches the deployment hostname
 - [ ] Certificate chain is trusted by a normal browser
-- [ ] Coolify owns certificate issuance and renewal
-- [ ] No application container mounts or stores the public TLS private key
-- [ ] Application nginx listens only on its internal HTTP port
+- [x] Coolify/Traefik owns certificate issuance and renewal through its Let's Encrypt resolver
+- [x] No application container mounts or stores the public TLS private key
+- [x] Application nginx listens only on its internal HTTP port
 
 ## Stage 8 — Migrate, Seed, and Start
 
@@ -281,3 +308,8 @@ Append verified milestones here without secrets.
 | 2026-06-30 | 1 — VPS and SSH | COMPLETE | VPS running Ubuntu 24.04.4 LTS; connection values verified in hPanel; existing VS Code Remote SSH password login confirmed; Coolify already installed | Prepare Coolify-specific repository configuration |
 | 2026-06-30 | Architecture | COMPLETE LOCALLY | Coolify owns public TLS; internal nginx serves SPA and preserves `/api`; backend stays private; no host ports; manual nginx/TLS path still builds | Commit and publish clean `main` to GitHub |
 | 2026-06-30 | 2 — GitHub publication | COMPLETE | Public repository published; remote `main` matched `f88fb35`; GitHub secret-scanning alerts API returned zero alerts | Connect the repository to Coolify |
+| 2026-06-30 | 3 — Coolify connection | COMPLETE | `Northstar Learning Bank` project and `production` environment created; Public GitHub source uses `main`/`HEAD` at verified tip `0c334d3`; `/compose.coolify.yaml` loaded; expected four services recognized; no domains assigned | Prepare the deployment hostname and DNS without deploying |
+| 2026-06-30 | 4 — Domain and DNS | COMPLETE | `bank.forgehub.cloud` A record created; system, Cloudflare, and Google resolvers return the VPS IPv4 address; no AAAA record; TCP ports 80 and 443 reachable | Prepare the Supabase production database |
+| 2026-06-30 | 5 — Supabase database | COMPLETE | East US region confirmed near VPS; unused Data API disabled; Shared Pooler session endpoint on port 5432; password and TLS SQLAlchemy URL stored in password manager; local tests remain isolated | Assign the production domain only to the Coolify gateway |
+| 2026-06-30 | 6 — Coolify environment | COMPLETE | Six production variables entered and verified; secrets masked/literal; cookie domain blank; automated previews not enabled; no values recorded in Git or this journal | Complete the remaining Stage 5 region/isolation confirmation |
+| 2026-06-30 | 7 — Domain and TLS | IN PROGRESS | Gateway-only domain assigned; healthy Traefik v3.6 owns 80/443 and has Let's Encrypt configured; no pre-deploy router exists; fallback certificate remains; port 8080 is not externally reachable | Publish the reviewed corrections, deploy once, and monitor router/ACME logs |
