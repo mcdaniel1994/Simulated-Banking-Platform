@@ -24,10 +24,24 @@ export function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  // Capture the invoking control once per opening, then restore keyboard context on close.
+  useEffect(() => {
+    if (!open) return;
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    cancelRef.current?.focus();
+    return () => {
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape" && !pending) onCancel();
     }
