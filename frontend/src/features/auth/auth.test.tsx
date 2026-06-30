@@ -63,4 +63,43 @@ describe("authentication flow", () => {
       ).not.toBeInTheDocument(),
     );
   });
+
+  it("shows the backend's safe generic login failure", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              code: "UNAUTHENTICATED",
+              message: "Authentication required",
+              fields: {},
+            },
+          },
+          { status: 401 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            error: {
+              code: "UNAUTHENTICATED",
+              message: "Invalid email or password",
+              fields: {},
+            },
+          },
+          { status: 401 },
+        ),
+      );
+    renderApp("/login");
+    await screen.findByRole("heading", { name: "Log in" });
+    await userEvent.type(
+      screen.getByLabelText("Email"),
+      "alex.customer@demo.bank.test",
+    );
+    await userEvent.type(screen.getByLabelText("Password"), "wrong");
+    await userEvent.click(screen.getByRole("button", { name: "Log in" }));
+    expect(
+      await screen.findByText("Invalid email or password"),
+    ).toBeInTheDocument();
+  });
 });

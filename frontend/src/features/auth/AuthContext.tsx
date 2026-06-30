@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Provider and its focused consumer hook form one auth boundary. */
 import {
   createContext,
   useCallback,

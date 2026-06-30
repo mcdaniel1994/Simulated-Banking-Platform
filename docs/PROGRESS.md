@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M9 — Admin Frontend
-- Current phase: Phase 33 — Admin interface (complete)
-- Current task: Begin Phase 34 consolidated frontend tests
-- Last completed: Phase 33 — Admin dashboard, customer detail, and status controls
-- Next action: Implement Phase 34 only
+- Current milestone: M10 — Frontend & E2E Testing
+- Current phase: Phase 34 — Consolidated frontend tests (complete)
+- Current task: Begin Phase 35 end-to-end happy path
+- Last completed: Phase 34 — Frontend component tests
+- Next action: Implement Phase 35 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -29,7 +29,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
 | M8 — Customer Frontend | IN PROGRESS | 2026-06-29 |  | Phase 30 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
-| M10 — Frontend & E2E Testing | NOT STARTED |  |  |  |
+| M10 — Frontend & E2E Testing | IN PROGRESS | 2026-06-29 |  | Phase 34 complete |
 | M11 — Deployment | NOT STARTED |  |  |  |
 | M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
@@ -760,7 +760,7 @@ Completion evidence:
 - Tests: `10 passed`; formatting, ESLint, TypeScript, and build passed.
 - Manual verification: ADMIN browser session displayed exact aggregates and both customers; prior
   CUSTOMER guard coverage proves admin routes redirect to unauthorized.
-- Commit: recorded in the Phase 34 update after the Phase 33 commit is created.
+- Commit: `8d0a7bd feat(frontend): add admin dashboard, customer detail, and status controls`
 - Notes: status mutations use CSRF and refetch; no admin path grants account ownership.
 
 ---
@@ -768,20 +768,20 @@ Completion evidence:
 ## M10 — Frontend & E2E Testing `[SUBMISSION]`
 
 ### Phase 34 — Frontend component tests
-Status: NOT STARTED
-- [ ] Login validation + success/fail rendering
-- [ ] Protected-route behavior
-- [ ] Dashboard rendering
-- [ ] Money-form validation + CSRF attachment + error rendering
-- [ ] Role-specific navigation
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Login validation + success/fail rendering
+- [x] Protected-route behavior
+- [x] Dashboard rendering
+- [x] Money-form validation + CSRF attachment + error rendering
+- [x] Role-specific navigation
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `12 passed` across 7 files; Prettier, ESLint (zero warnings), TypeScript, and build passed.
+- Manual verification: component matrix complements the completed real-browser role checks.
+- Commit: recorded in the Phase 35 update after the Phase 34 commit is created.
+- Notes: same-account transfers are rejected before mutation; safe backend login errors render.
 
 ### Phase 35 — End-to-end happy path
 Status: NOT STARTED

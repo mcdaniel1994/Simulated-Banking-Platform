@@ -2963,6 +2963,16 @@ frontend role guards remain convenience controls over independently authorized A
 
 ---
 
+### Entry — 2026-06-29 — Phase 34: Consolidated Frontend Tests
+
+The focused suite now covers authentication initialization and failure, guards and role navigation,
+dashboard exact totals, history pagination, money normalization, mutation CSRF, same-account
+validation, and administrator aggregates. I avoided duplicating service-level banking tests already
+proved more strongly in the backend suite. All frontend static and production-build gates pass
+without lint warnings.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
