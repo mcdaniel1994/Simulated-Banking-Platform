@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import AccountStatus
 from app.schemas.account import AccountResponse
@@ -20,6 +20,33 @@ class AdminCustomerResponse(BaseModel):
     last_name: str
     is_active: bool
     created_at: datetime
+
+
+class AdminCustomerCreateRequest(BaseModel):
+    """Administrator-provided identity fields for one new customer."""
+
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        # Whitespace-only names must not survive validation into customer records.
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("name must not be blank")
+        return normalized
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        # Login uses this same lowercase representation when resolving SQL identities.
+        normalized = value.strip().lower()
+        if "@" not in normalized:
+            raise ValueError("email must contain @")
+        return normalized
 
 
 class AdminCustomerDetailResponse(BaseModel):

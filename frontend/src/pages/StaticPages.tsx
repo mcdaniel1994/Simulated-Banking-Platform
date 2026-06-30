@@ -1,4 +1,4 @@
-import { BookOpen, Landmark, ShieldCheck } from "lucide-react";
+import { Landmark, ReceiptText, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { buttonClassName } from "../components/ui/buttonStyles";
@@ -9,19 +9,18 @@ export function LandingPage() {
       <div className="grid items-center gap-10 py-6 lg:grid-cols-[1.1fr_0.9fr] lg:py-14">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-forest-700">
-            Learn production-oriented engineering
+            Secure digital banking
           </p>
           <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-forest-950 sm:text-6xl">
-            Simulated banking, exact by design.
+            Banking built around clarity and control.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-ink-700">
-            Explore secure sessions, account ownership, atomic transfers, and
-            append-only transaction history without connecting real money or a
-            financial institution.
+            View balances, manage account activity, and move funds between your
+            accounts through a secure, straightforward experience.
           </p>
           <div className="mt-8">
             <Link className={buttonClassName("primary")} to="/login">
-              Use the demo
+              Log in
             </Link>
           </div>
         </div>
@@ -38,9 +37,9 @@ export function LandingPage() {
               body: "Decimal strings and integer cents avoid floating-point drift throughout the browser.",
             },
             {
-              icon: BookOpen,
-              title: "Built to teach",
-              body: "The interface explains the engineering ideas without presenting itself as a real bank.",
+              icon: ReceiptText,
+              title: "Clear activity",
+              body: "Detailed transaction history keeps every account movement easy to review.",
             },
           ].map(({ icon: Icon, title, body }) => (
             <article

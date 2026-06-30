@@ -34,7 +34,7 @@ it("validates and submits an exact deposit through the shared client", async () 
     </MemoryRouter>,
   );
   await userEvent.type(await screen.findByLabelText("Amount (USD)"), "12.5");
-  await userEvent.click(screen.getByRole("button", { name: "Add demo funds" }));
+  await userEvent.click(screen.getByRole("button", { name: "Add funds" }));
   expect(await screen.findByText("refetched")).toBeInTheDocument();
   const init = fetchMock.mock.calls[1][1]!;
   expect(init.body).toBe(JSON.stringify({ amount: "12.50" }));

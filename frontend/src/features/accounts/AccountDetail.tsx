@@ -130,7 +130,7 @@ export function AccountDetail() {
           to={`/accounts/${account.id}/deposit`}
         >
           <ArrowDownToLine aria-hidden="true" className="size-5" />
-          Demo deposit
+          Add funds
         </Link>
         <Link
           className={buttonClassName("secondary")}

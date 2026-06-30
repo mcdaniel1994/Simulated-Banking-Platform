@@ -4,7 +4,7 @@ async function login(page: Page, role: "customer" | "administrator") {
   await page.goto("/login");
   await page
     .getByRole("button", {
-      name: role === "customer" ? /Customer demo/ : /Administrator demo/,
+      name: role === "customer" ? /Customer access/ : /Administrator access/,
     })
     .click();
   await page.getByRole("button", { name: "Log in" }).click();
@@ -60,7 +60,7 @@ test("administrator can inspect responsive management UI without mutation", asyn
   await login(page, "administrator");
   await expect(page).toHaveURL(/\/admin$/);
   await expect(
-    page.getByRole("heading", { name: "Learning bank activity" }),
+    page.getByRole("heading", { name: "Banking activity" }),
   ).toBeVisible();
   await expectNoPageOverflow(page);
 

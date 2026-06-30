@@ -25,7 +25,7 @@ test("customer login and exact money happy path", async ({ page }) => {
 
   await page.goto(`/accounts/${sourceId}/deposit`);
   await page.getByLabel("Amount (USD)").fill("10.00");
-  await page.getByRole("button", { name: "Add demo funds" }).click();
+  await page.getByRole("button", { name: "Add funds" }).click();
   await expect(page.getByTestId("account-balance")).toHaveAttribute(
     "data-balance",
     `${(cents(sourceBefore!) + 1000n) / 100n}.${((cents(sourceBefore!) + 1000n) % 100n).toString().padStart(2, "0")}`,

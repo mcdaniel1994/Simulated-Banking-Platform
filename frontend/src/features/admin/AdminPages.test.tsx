@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import {
   AdminDashboardPage,
+  CreateCustomerPage,
   CustomerDetailPage,
   CustomerListPage,
 } from "./AdminPages";
@@ -90,6 +91,138 @@ it("renders responsive customer identity and status controls", async () => {
     "href",
     "/admin/customers/7",
   );
+  expect(screen.getByRole("link", { name: "Add customer" })).toHaveAttribute(
+    "href",
+    "/admin/customers/new",
+  );
+});
+
+it("keeps customer creation available when the list is empty", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
+  render(
+    <MemoryRouter>
+      <CustomerListPage />
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByText("No customers found")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Add customer" })).toHaveAttribute(
+    "href",
+    "/admin/customers/new",
+  );
+});
+
+it("validates confirmation and creates a customer with CSRF", async () => {
+  document.cookie = "csrf_token=create-customer-csrf; Path=/";
+  const createdCustomer = {
+    ...customer,
+    id: 9,
+    email: "morgan@example.test",
+    first_name: "Morgan",
+    last_name: "Rivera",
+  };
+  const createdDetail = {
+    customer: createdCustomer,
+    accounts: [{ ...checking, id: 21, balance: "0.00" }],
+    transactions: [],
+    transaction_limit: 10,
+    transaction_offset: 0,
+  };
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(Response.json(createdCustomer, { status: 201 }))
+    .mockResolvedValueOnce(Response.json(createdDetail));
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter initialEntries={["/admin/customers/new"]}>
+      <Routes>
+        <Route path="/admin/customers/new" element={<CreateCustomerPage />} />
+        <Route
+          path="/admin/customers/:userId"
+          element={<CustomerDetailPage />}
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+  await user.type(screen.getByLabelText("First name"), "Morgan");
+  await user.type(screen.getByLabelText("Last name"), "Rivera");
+  await user.type(screen.getByLabelText("Email"), "morgan@example.test");
+  await user.type(
+    screen.getByLabelText("Initial password"),
+    "Secure-passphrase",
+  );
+  await user.type(screen.getByLabelText("Confirm password"), "different");
+  await user.click(screen.getByRole("button", { name: "Create customer" }));
+  expect(screen.getByText("The passwords do not match.")).toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalled();
+
+  await user.clear(screen.getByLabelText("Confirm password"));
+  await user.type(
+    screen.getByLabelText("Confirm password"),
+    "Secure-passphrase",
+  );
+  await user.click(screen.getByRole("button", { name: "Create customer" }));
+
+  expect(
+    await screen.findByText("Customer and checking account created."),
+  ).toBeInTheDocument();
+  expect(await screen.findByText("Morgan Rivera")).toBeInTheDocument();
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  const createInit = fetchMock.mock.calls[0][1]!;
+  expect(createInit.body).toBe(
+    JSON.stringify({
+      first_name: "Morgan",
+      last_name: "Rivera",
+      email: "morgan@example.test",
+      password: "Secure-passphrase",
+    }),
+  );
+  expect(createInit.body).not.toContain("confirm");
+  expect(new Headers(createInit.headers).get("X-CSRF-Token")).toBe(
+    "create-customer-csrf",
+  );
+});
+
+it("renders duplicate email feedback on the customer form", async () => {
+  document.cookie = "csrf_token=create-customer-csrf; Path=/";
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    Response.json(
+      {
+        error: {
+          code: "EMAIL_ALREADY_EXISTS",
+          message: "A customer with this email already exists",
+          fields: {
+            email: "A customer with this email already exists.",
+          },
+        },
+      },
+      { status: 409 },
+    ),
+  );
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter>
+      <CreateCustomerPage />
+    </MemoryRouter>,
+  );
+
+  await user.type(screen.getByLabelText("First name"), "Morgan");
+  await user.type(screen.getByLabelText("Last name"), "Rivera");
+  await user.type(screen.getByLabelText("Email"), "existing@example.test");
+  await user.type(
+    screen.getByLabelText("Initial password"),
+    "Secure-passphrase",
+  );
+  await user.type(
+    screen.getByLabelText("Confirm password"),
+    "Secure-passphrase",
+  );
+  await user.click(screen.getByRole("button", { name: "Create customer" }));
+
+  expect(
+    await screen.findByText("A customer with this email already exists."),
+  ).toBeInTheDocument();
 });
 
 it("renders returned transactions and confirms an account status mutation", async () => {

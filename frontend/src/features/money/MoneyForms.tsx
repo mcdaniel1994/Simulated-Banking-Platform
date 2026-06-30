@@ -55,7 +55,7 @@ function securityNotice() {
         <p className="font-bold text-ink-950">Your security matters</p>
         <p className="mt-1 leading-6 text-ink-700">
           FastAPI validates the session, CSRF token, account ownership, status,
-          and available funds before committing any simulated money movement.
+          and available funds before completing any account movement.
         </p>
       </div>
     </aside>
@@ -115,12 +115,12 @@ export function MoneyForm({ operation }: { operation: Operation }) {
       const success: AccountDetailSuccess =
         operation === "deposit"
           ? {
-              title: "Demo deposit successful",
-              message: `${formatUsd(normalized)} was added to your simulated account.`,
+              title: "Funds added",
+              message: `${formatUsd(normalized)} was added to your account.`,
             }
           : {
               title: "Withdrawal successful",
-              message: `${formatUsd(normalized)} was withdrawn from your simulated account.`,
+              message: `${formatUsd(normalized)} was withdrawn from your account.`,
             };
       navigate(`/accounts/${accountId}`, { state: { success } });
     } catch (cause) {
@@ -170,12 +170,12 @@ export function MoneyForm({ operation }: { operation: Operation }) {
         Back to account
       </button>
       <h1 className="mt-4 text-4xl font-bold tracking-tight text-forest-950">
-        {isDeposit ? "Demo deposit" : "Withdraw"}
+        {isDeposit ? "Add funds" : "Withdraw"}
       </h1>
       <p className="mt-3 text-lg text-ink-700">
         {isDeposit
-          ? "Add simulated funds for learning and demonstration purposes."
-          : "Remove simulated funds without exceeding the available balance."}
+          ? "Add funds to the selected account."
+          : "Withdraw funds without exceeding the available balance."}
       </p>
 
       <div className="mt-7">
@@ -188,7 +188,7 @@ export function MoneyForm({ operation }: { operation: Operation }) {
             onDismiss={() => setFormError("")}
             title={
               isDeposit
-                ? "We could not complete the demo deposit"
+                ? "We could not add funds"
                 : "We could not complete the withdrawal"
             }
             tone="error"
@@ -207,7 +207,7 @@ export function MoneyForm({ operation }: { operation: Operation }) {
           error={amountError}
           hint={
             isDeposit
-              ? "This adds demonstration funds only; no real deposit occurs."
+              ? "Enter the amount to add to this account."
               : `You can withdraw up to ${formatUsd(account.balance)}.`
           }
           id="money-amount"
@@ -248,11 +248,7 @@ export function MoneyForm({ operation }: { operation: Operation }) {
             Cancel
           </Button>
           <Button disabled={pending} type="submit">
-            {pending
-              ? "Processing…"
-              : isDeposit
-                ? "Add demo funds"
-                : "Withdraw"}
+            {pending ? "Processing…" : isDeposit ? "Add funds" : "Withdraw"}
           </Button>
         </div>
       </form>
@@ -325,7 +321,7 @@ export function TransferForm() {
       });
       const success: AccountDetailSuccess = {
         title: "Transfer successful",
-        message: `${formatUsd(normalized!)} moved between your simulated accounts.`,
+        message: `${formatUsd(normalized!)} moved between your accounts.`,
       };
       navigate(`/accounts/${source}`, { state: { success } });
     } catch (cause) {
@@ -377,7 +373,7 @@ export function TransferForm() {
         Transfer
       </h1>
       <p className="mt-3 text-lg text-ink-700">
-        Move simulated money between accounts you own.
+        Move funds between accounts you own.
       </p>
 
       {formError && (

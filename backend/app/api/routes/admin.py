@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session as DatabaseSession
 
 from app.api.deps import AdminUser, CsrfProtected
@@ -10,6 +10,7 @@ from app.models import Account, User
 from app.schemas.account import AccountResponse
 from app.schemas.admin import (
     AccountStatusRequest,
+    AdminCustomerCreateRequest,
     AdminCustomerDetailResponse,
     AdminCustomerResponse,
     AdminDashboardResponse,
@@ -18,6 +19,7 @@ from app.schemas.admin import (
 from app.services.admin_service import (
     AdminCustomerDetail,
     AdminDashboardSummary,
+    create_customer,
     get_customer_detail,
     get_dashboard_summary,
     list_customers,
@@ -48,6 +50,30 @@ def list_customers_route(
 
     # Response validation selects safe identity fields from the ORM users returned by the service.
     return list_customers(db)
+
+
+@router.post(
+    "/users",
+    response_model=AdminCustomerResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_customer_route(
+    request_body: AdminCustomerCreateRequest,
+    _csrf: CsrfProtected,
+    admin: AdminUser,
+    db: Annotated[DatabaseSession, Depends(get_db)],
+) -> User:
+    """Provision one customer identity and its initial checking account."""
+
+    # The service fixes role, lifecycle state, account type, and opening balance server-side.
+    return create_customer(
+        db,
+        admin=admin,
+        email=request_body.email,
+        password=request_body.password,
+        first_name=request_body.first_name,
+        last_name=request_body.last_name,
+    )
 
 
 @router.get("/users/{user_id}", response_model=AdminCustomerDetailResponse)

@@ -88,6 +88,16 @@ class InactiveUserError(DomainError):
     status_code = status.HTTP_403_FORBIDDEN
 
 
+class EmailAlreadyExistsError(DomainError):
+    code = "EMAIL_ALREADY_EXISTS"
+    default_message = "A customer with this email already exists"
+    status_code = status.HTTP_409_CONFLICT
+
+    def __init__(self) -> None:
+        # The field-level message lets the administrator correct the form without exposing SQL.
+        super().__init__(fields={"email": "A customer with this email already exists."})
+
+
 class InternalError(DomainError):
     """Represent an intentionally generic server failure."""
 

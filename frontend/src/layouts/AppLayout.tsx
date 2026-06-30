@@ -4,7 +4,6 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { AlertBanner } from "../components/ui/AlertBanner";
 import { buttonClassName } from "../components/ui/buttonStyles";
-import { EducationalNotice } from "../components/ui/EducationalNotice";
 import { NorthstarMark } from "../components/ui/NorthstarMark";
 import { useAuth } from "../features/auth/AuthContext";
 
@@ -79,7 +78,7 @@ export function AppLayout() {
             to="/"
           >
             <NorthstarMark className="size-8 shrink-0 text-gold-300 sm:size-9" />
-            <span>Northstar Learning Bank</span>
+            <span>Northstar Bank</span>
           </Link>
 
           <nav
@@ -210,9 +209,14 @@ export function AppLayout() {
             />
           </div>
         )}
-        <EducationalNotice />
         <Outlet />
       </main>
+      <footer className="border-t border-stone-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-5 text-center text-sm text-ink-600 sm:px-6 lg:px-8">
+          Northstar Bank is a simulated banking application. No real funds or
+          financial services are provided.
+        </div>
+      </footer>
     </div>
   );
 }

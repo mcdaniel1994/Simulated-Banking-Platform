@@ -135,4 +135,35 @@ describe("authentication flow", () => {
       await screen.findByText("Invalid email or password"),
     ).toBeInTheDocument();
   });
+
+  it("shows seeded credentials and keeps the login password input masked", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: "UNAUTHENTICATED",
+            message: "Authentication required",
+            fields: {},
+          },
+        },
+        { status: 401 },
+      ),
+    );
+    renderApp("/login");
+    await screen.findByRole("heading", { name: "Log in" });
+
+    expect(screen.getByText("CustomerDemo!2026")).toBeInTheDocument();
+    expect(screen.getByText("AdminDemo!2026")).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /Customer access/ }),
+    );
+    expect(screen.getByLabelText("Email")).toHaveValue(
+      "alex.customer@demo.bank.test",
+    );
+    expect(screen.getByLabelText("Password")).toHaveValue("CustomerDemo!2026");
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "type",
+      "password",
+    );
+  });
 });

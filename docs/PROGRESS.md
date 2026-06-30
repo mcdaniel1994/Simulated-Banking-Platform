@@ -9,10 +9,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Record and publish the required demonstration video
-- Last completed: Stage 9 live deployment verification, automated smoke, and secret-output audit
-- Next action: Follow `docs/DEMO_VIDEO.md`, upload the video, and add its public URL
-- Current blocker: required user-recorded demo video
+- Current task: Publish and redeploy the approved admin-customer extension before recording video
+- Last completed: Local admin customer provisioning, professional UI refresh, and acceptance checks
+- Next action: Push the verified extension, redeploy through Coolify, then follow `docs/DEMO_VIDEO.md`
+- Current blocker: required user-recorded demo video after the refreshed application is deployed
 - Last updated: 2026-06-30
 
 ## Milestone progress
@@ -31,9 +31,9 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
 | M11 — Deployment | COMPLETE | 2026-06-29 | 2026-06-30 | Coolify deployment healthy; trusted HTTPS, SPA, API health, migration, seed, and live database write verified |
-| M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Repository work complete; criteria 13/15 external |
+| M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Deployment complete; criterion 15 video remains external |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
-| M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
+| M14 — Extensions | IN PROGRESS | 2026-06-30 |  | Approved admin provisioning and professional UI extension complete locally |
 
 ---
 
@@ -854,7 +854,7 @@ Completion evidence:
 ## M12 — Documentation & Submission `[SUBMISSION]` — SUBMISSION CHECKPOINT
 
 ### Phase 38 — README, design write-up, AI citation, demo video
-Status: BLOCKED (external video and live deployment; repository work complete)
+Status: BLOCKED (external video only; live deployment is complete)
 - [x] README (overview, architecture, install/run, deploy, demo creds, decisions)
 - [x] Cite AI assistance per CS50x 2026 policy
 - [ ] Record and upload the demo video
@@ -862,21 +862,21 @@ Status: BLOCKED (external video and live deployment; repository work complete)
 - [x] Full suites and clean-checkout-style setup pass; reseed runs
 - [x] Record decisions in `MY_WORKFLOW.md`
 - [x] Commit the completed repository phase
-- [ ] **SUBMISSION CHECKPOINT satisfied** — criteria 13 and 15 remain open
+- [ ] **SUBMISSION CHECKPOINT satisfied** — criterion 15 remains open
 
 Completion evidence:
-- Tests: backend `116 passed, 1 documented warning`; frontend `12 passed`; Chromium happy path
-  `1 passed`; Chromium local HTTPS production smoke `2 passed`; Prettier, ESLint, TypeScript, Vite
-  build, Ruff format/lint, Alembic drift, migration, seed, Docker image builds, nginx config, and
-  HTTPS health gates passed.
+- Tests: backend `122 passed, 1 documented warning`; frontend `21 passed`; Chromium happy path
+  `1 passed`; responsive desktop/mobile suite `4 passed`; prior live HTTPS production smoke
+  `2 passed`; Prettier, ESLint, TypeScript, Vite build, Ruff format/lint, Alembic drift, migration,
+  seed, Docker image builds, nginx config, and HTTPS health gates passed.
 - Manual verification: a fresh Git archive created new Python and npm environments, installed 34
   locked Python packages and 278 npm packages, imported the backend, built the SPA, and parsed
   Compose. The final production-shaped containers rebuilt, migrated, seeded, became healthy, and
   returned `{"status":"ok"}` through nginx HTTPS.
 - Commit: `docs: add README, design write-up, AI citation, and demo video`
 - Notes: `README.md`, `docs/DEMO_VIDEO.md`, and `docs/SUBMISSION_CHECKLIST.md` are complete.
-  Criteria 13 and 15 are explicitly not satisfied because no real VPS/Supabase/trusted-domain
-  deploy or recorded/uploaded video exists.
+  Criterion 13 is satisfied by the trusted-domain Coolify/Supabase deployment. Criterion 15 remains
+  open because the recorded/uploaded video does not yet exist.
 
 ---
 
@@ -895,7 +895,9 @@ Status: NOT STARTED
 
 ## M14 — Extensions `[EXTENSION]` (off critical path)
 
-Status: NOT STARTED
+Status: IN PROGRESS
+- [x] E0 — Admin-created customer identity + active $0.00 checking account
+- [x] E0 — Professional UI copy with one discreet simulation disclosure
 - [ ] E1 — JWT access + rotating refresh (reuse-detection)
 - [ ] E2 — Reconciliation as an admin tool
 - [ ] E3 — Audit-event browser UI; fraud-flag events
@@ -903,6 +905,17 @@ Status: NOT STARTED
 - [ ] E5 — Double-entry ledger refactor
 - [ ] E6 — Customer profile editing; simulated identity workflow
 - [ ] E7 — Admin approval workflow (pending-state machine)
+
+Approved extension evidence:
+- API: `POST /api/admin/users` is ADMIN- and CSRF-protected; it hashes the initial password,
+  creates the customer/account/audit event atomically, and returns safe duplicate-email errors.
+- UI: Manage Customers exposes an accessible Add Customer form; seeded login cards visibly include
+  both credentials; repeated educational/demo copy is replaced by professional product wording.
+- Tests: backend `122 passed`; frontend `21 passed`; local happy path `1 passed`; responsive
+  desktop/mobile suite `4 passed`; Alembic reports no schema drift.
+- Manual verification: an administrator created a customer locally, and the new credentials and
+  checking account worked as expected.
+- Production smoke was intentionally not rerun because the refreshed commit is not deployed yet.
 
 ---
 

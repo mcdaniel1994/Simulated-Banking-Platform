@@ -6,6 +6,7 @@ from app.errors import (
     NOT_FOUND_ERROR,
     CsrfInvalidError,
     DomainError,
+    EmailAlreadyExistsError,
     ForbiddenError,
     InactiveAccountError,
     InactiveUserError,
@@ -29,6 +30,7 @@ DOMAIN_ERRORS: dict[str, type[DomainError]] = {
     "inactive-account": InactiveAccountError,
     "same-account-transfer": SameAccountTransferError,
     "inactive-user": InactiveUserError,
+    "email-already-exists": EmailAlreadyExistsError,
     "internal": InternalError,
 }
 
@@ -55,6 +57,7 @@ def unexpected_error_probe() -> None:
         ("inactive-account", "INACTIVE_ACCOUNT", 409),
         ("same-account-transfer", "SAME_ACCOUNT_TRANSFER", 400),
         ("inactive-user", "INACTIVE_USER", 403),
+        ("email-already-exists", "EMAIL_ALREADY_EXISTS", 409),
         ("internal", "INTERNAL_ERROR", 500),
     ],
 )

@@ -3,14 +3,16 @@ import {
   ArrowRight,
   Landmark,
   LockKeyhole,
+  Plus,
   ReceiptText,
   Users,
   WalletCards,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { apiRequest } from "../../api/client";
+import { ApiError } from "../../api/errors";
 import { formatUsd } from "../../api/money";
 import { AccountIcon } from "../../components/accounts/AccountIcon";
 import { TransactionList } from "../../components/transactions/TransactionList";
@@ -18,6 +20,7 @@ import { AlertBanner } from "../../components/ui/AlertBanner";
 import { Button } from "../../components/ui/Button";
 import { buttonClassName } from "../../components/ui/buttonStyles";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { FormField } from "../../components/ui/FormField";
 import { PageState } from "../../components/ui/PageState";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import type {
@@ -26,6 +29,9 @@ import type {
   AdminCustomerDetail as CustomerDetail,
   AdminDashboard as Dashboard,
 } from "../../types/api";
+
+const fieldClasses =
+  "min-h-12 w-full rounded-lg border border-stone-300 bg-white px-4 py-3 text-ink-950 shadow-sm outline-none transition focus:border-forest-700 focus:ring-3 focus:ring-success-200";
 
 function useRemote<T>(path: string) {
   const [data, setData] = useState<T | null>(null);
@@ -113,11 +119,11 @@ export function AdminDashboardPage() {
     {
       label: "Accounts",
       value: String(remote.data.account_count),
-      detail: "Simulated bank accounts",
+      detail: "Customer checking and savings accounts",
       Icon: WalletCards,
     },
     {
-      label: "Simulated balance",
+      label: "Total balance",
       value: formatUsd(remote.data.total_simulated_balance),
       detail: "Across all customer accounts",
       Icon: Landmark,
@@ -136,11 +142,10 @@ export function AdminDashboardPage() {
         Administrator overview
       </p>
       <h1 className="mt-2 text-4xl font-bold tracking-tight text-forest-950">
-        Learning bank activity
+        Banking activity
       </h1>
       <p className="mt-3 max-w-3xl text-lg leading-7 text-ink-700">
-        Review simulated customer and account activity without entering customer
-        money workflows.
+        Review customer access, account status, balances, and recent activity.
       </p>
 
       <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -190,64 +195,299 @@ export function CustomerListPage() {
     />
   );
   if (!remote.data || remote.error) return state;
-  if (!remote.data.length)
-    return (
-      <PageState
-        kind="empty"
-        message="Customer records will appear here when they are available."
-        title="No customers found"
-      />
-    );
 
   return (
     <section>
       <p className="text-sm font-bold uppercase tracking-widest text-success-700">
         Administrator
       </p>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="mt-2 text-4xl font-bold tracking-tight text-forest-950">
+            Manage customers
+          </h1>
+          <p className="mt-3 text-lg text-ink-700">
+            Review customer access and open a profile to manage its accounts.
+          </p>
+        </div>
+        <Link
+          className={buttonClassName("primary", "shrink-0")}
+          to="/admin/customers/new"
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          Add customer
+        </Link>
+      </div>
+
+      {remote.data.length ? (
+        <ul className="mt-8 grid gap-4">
+          {remote.data.map((customer) => (
+            <li
+              className="rounded-xl border border-stone-200 bg-white p-5 shadow-card"
+              key={customer.id}
+            >
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <span
+                  aria-hidden="true"
+                  className="grid size-14 shrink-0 place-items-center rounded-full bg-success-200 text-lg font-bold text-forest-900"
+                >
+                  {customer.first_name[0]}
+                  {customer.last_name[0]}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg font-bold text-forest-950">
+                    {customer.first_name} {customer.last_name}
+                  </h2>
+                  <p className="mt-1 break-all text-sm text-ink-700">
+                    {customer.email}
+                  </p>
+                </div>
+                <StatusBadge
+                  status={customer.is_active ? "ACTIVE_USER" : "INACTIVE_USER"}
+                />
+                <Link
+                  aria-label={`View ${customer.first_name} ${customer.last_name}`}
+                  className={buttonClassName("secondary")}
+                  to={`/admin/customers/${customer.id}`}
+                >
+                  View details
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-8">
+          <PageState
+            kind="empty"
+            message="Add a customer to create their secure access and initial checking account."
+            title="No customers found"
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function CreateCustomerPage() {
+  const navigate = useNavigate();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const nextErrors = {
+      first_name: firstName.trim() ? "" : "Enter the customer’s first name.",
+      last_name: lastName.trim() ? "" : "Enter the customer’s last name.",
+      email: email.includes("@") ? "" : "Enter a valid email address.",
+      password:
+        password.length >= 12
+          ? ""
+          : "Use a password with at least 12 characters.",
+      confirm_password:
+        confirmPassword === password ? "" : "The passwords do not match.",
+    };
+    setFieldErrors(nextErrors);
+    setFormError("");
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    setPending(true);
+    try {
+      const customer = await apiRequest<AdminCustomer>("/api/admin/users", {
+        method: "POST",
+        body: {
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          password,
+        },
+      });
+      navigate(`/admin/customers/${customer.id}`, {
+        state: { success: "Customer and checking account created." },
+      });
+    } catch (cause) {
+      if (cause instanceof ApiError && Object.keys(cause.fields).length) {
+        setFieldErrors((current) => ({ ...current, ...cause.fields }));
+      } else {
+        setFormError(
+          cause instanceof ApiError
+            ? cause.message
+            : "The customer could not be created.",
+        );
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-3xl">
+      <Link
+        className="inline-flex min-h-11 items-center gap-2 rounded-md font-semibold text-forest-800 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
+        to="/admin/customers"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Back to customers
+      </Link>
+      <p className="mt-5 text-sm font-bold uppercase tracking-widest text-success-700">
+        Administrator
+      </p>
       <h1 className="mt-2 text-4xl font-bold tracking-tight text-forest-950">
-        Manage customers
+        Add customer
       </h1>
-      <p className="mt-3 text-lg text-ink-700">
-        Review customer access and open a profile to manage its accounts.
+      <p className="mt-3 text-lg leading-7 text-ink-700">
+        Create secure customer access with an active checking account and a zero
+        opening balance.
       </p>
 
-      <ul className="mt-8 grid gap-4">
-        {remote.data.map((customer) => (
-          <li
-            className="rounded-xl border border-stone-200 bg-white p-5 shadow-card"
-            key={customer.id}
+      {formError && (
+        <div className="mt-6">
+          <AlertBanner
+            onDismiss={() => setFormError("")}
+            title={formError}
+            tone="error"
+          />
+        </div>
+      )}
+
+      <form
+        className="mt-7 grid gap-5 rounded-xl border border-stone-200 bg-white p-6 shadow-card sm:p-8"
+        noValidate
+        onSubmit={(event) => void submit(event)}
+      >
+        <div className="grid items-start gap-5 sm:grid-cols-2">
+          <FormField
+            error={fieldErrors.first_name}
+            id="customer-first-name"
+            label="First name"
+            required
           >
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <span
-                aria-hidden="true"
-                className="grid size-14 shrink-0 place-items-center rounded-full bg-success-200 text-lg font-bold text-forest-900"
-              >
-                {customer.first_name[0]}
-                {customer.last_name[0]}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold text-forest-950">
-                  {customer.first_name} {customer.last_name}
-                </h2>
-                <p className="mt-1 break-all text-sm text-ink-700">
-                  {customer.email}
-                </p>
-              </div>
-              <StatusBadge
-                status={customer.is_active ? "ACTIVE_USER" : "INACTIVE_USER"}
-              />
-              <Link
-                aria-label={`View ${customer.first_name} ${customer.last_name}`}
-                className={buttonClassName("secondary")}
-                to={`/admin/customers/${customer.id}`}
-              >
-                View details
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
+            <input
+              aria-describedby={
+                fieldErrors.first_name ? "customer-first-name-error" : undefined
+              }
+              aria-invalid={Boolean(fieldErrors.first_name)}
+              aria-required="true"
+              autoComplete="given-name"
+              className={fieldClasses}
+              id="customer-first-name"
+              onChange={(event) => setFirstName(event.target.value)}
+              value={firstName}
+            />
+          </FormField>
+          <FormField
+            error={fieldErrors.last_name}
+            id="customer-last-name"
+            label="Last name"
+            required
+          >
+            <input
+              aria-describedby={
+                fieldErrors.last_name ? "customer-last-name-error" : undefined
+              }
+              aria-invalid={Boolean(fieldErrors.last_name)}
+              aria-required="true"
+              autoComplete="family-name"
+              className={fieldClasses}
+              id="customer-last-name"
+              onChange={(event) => setLastName(event.target.value)}
+              value={lastName}
+            />
+          </FormField>
+        </div>
+        <FormField
+          error={fieldErrors.email}
+          id="customer-email"
+          label="Email"
+          required
+        >
+          <input
+            aria-describedby={
+              fieldErrors.email ? "customer-email-error" : undefined
+            }
+            aria-invalid={Boolean(fieldErrors.email)}
+            aria-required="true"
+            autoComplete="email"
+            className={fieldClasses}
+            id="customer-email"
+            onChange={(event) => setEmail(event.target.value)}
+            type="email"
+            value={email}
+          />
+        </FormField>
+        <div className="grid items-start gap-5 sm:grid-cols-2">
+          <FormField
+            error={fieldErrors.password}
+            hint="Use at least 12 characters."
+            id="customer-password"
+            label="Initial password"
+            required
+          >
+            <input
+              aria-describedby={[
+                fieldErrors.password ? "customer-password-error" : "",
+                "customer-password-hint",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-invalid={Boolean(fieldErrors.password)}
+              aria-required="true"
+              autoComplete="new-password"
+              className={fieldClasses}
+              id="customer-password"
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              value={password}
+            />
+          </FormField>
+          <FormField
+            error={fieldErrors.confirm_password}
+            id="customer-confirm-password"
+            label="Confirm password"
+            required
+          >
+            <input
+              aria-describedby={
+                fieldErrors.confirm_password
+                  ? "customer-confirm-password-error"
+                  : undefined
+              }
+              aria-invalid={Boolean(fieldErrors.confirm_password)}
+              aria-required="true"
+              autoComplete="new-password"
+              className={fieldClasses}
+              id="customer-confirm-password"
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              type="password"
+              value={confirmPassword}
+            />
+          </FormField>
+        </div>
+        <p className="rounded-lg bg-stone-50 p-4 text-sm leading-6 text-ink-700">
+          Share the initial password securely. It cannot be viewed again after
+          this customer is created.
+        </p>
+        <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-end">
+          <Button
+            disabled={pending}
+            onClick={() => navigate("/admin/customers")}
+            type="button"
+            variant="secondary"
+          >
+            Cancel
+          </Button>
+          <Button disabled={pending} type="submit">
+            {pending ? "Creating customer…" : "Create customer"}
+          </Button>
+        </div>
+      </form>
     </section>
   );
 }
@@ -290,6 +530,8 @@ function confirmationCopy(action: PendingAction | null) {
 
 export function CustomerDetailPage() {
   const { userId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const remote = useRemote<CustomerDetail>(
     `/api/admin/users/${userId}?limit=10&offset=0`,
   );
@@ -298,7 +540,15 @@ export function CustomerDetailPage() {
   );
   const [mutationPending, setMutationPending] = useState(false);
   const [mutationError, setMutationError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState(
+    (location.state as { success?: string } | null)?.success ?? "",
+  );
+
+  useEffect(() => {
+    if (!location.state) return;
+    // Clear one-time creation feedback so a refresh cannot replay the success message.
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   async function confirmMutation() {
     if (!pendingAction || mutationPending) return;

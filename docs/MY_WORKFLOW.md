@@ -3353,8 +3353,58 @@ The final Stage 9 review found no production database URL, session secret, passw
 string, or traceback in the Coolify deployment/container logs. A tracked-file scan found only
 documented placeholders, local examples, and isolated test values—not production credentials.
 Together with the completed manual flows and two passing production smoke tests, this satisfies
-the live deployment verification gate. The remaining submission blocker is now the user-recorded
-and publicly accessible demonstration video; M13 hardening and M14 extensions remain untouched.
+the live deployment verification gate. At that checkpoint, the remaining submission blocker was
+the user-recorded and publicly accessible demonstration video, and M13/M14 had not yet begun.
+
+### Entry — 2026-06-30 — Approved Extension: Admin Customer Provisioning and Professional UI
+
+#### What I Worked On
+
+I added an administrator-only customer creation workflow under Manage Customers. The new endpoint
+accepts a name, normalized email, and administrator-selected initial password, then creates an
+active CUSTOMER identity and one active checking account with a zero balance. I also replaced the
+repeated educational/demo interface language with professional banking copy while retaining one
+compact footer that clearly says the application is a simulation.
+
+#### How It Fits the Architecture
+
+The FastAPI route remains thin: ADMIN authorization, CSRF validation, and request validation finish
+before the service performs the business transaction. The service hashes the password with the
+existing Argon2id utility and commits the User, Account, and `user_created` AuditEvent together.
+The frontend uses the existing typed request boundary, cookie credentials, and CSRF-header
+injection; it does not receive or store the password after submission.
+
+#### Decisions and Trade-offs
+
+- The administrator enters the initial password because password reset/change remains outside the
+  current scope. The form confirms it locally but sends only one password value to the backend.
+- Every new customer receives one active CHECKING account with `$0.00`. An empty transaction
+  history reconciles exactly to that balance without inventing an opening transaction.
+- Administrator-created account numbers use a reserved prefix plus the generated SQL user ID,
+  making them unique without a random-collision retry workflow or new dependency.
+- Duplicate email addresses return a safe `409 EMAIL_ALREADY_EXISTS` field error. Passwords never
+  enter responses, audit metadata, or application logs.
+- Existing seeded email addresses, internal API field names, and append-only transaction
+  descriptions remain unchanged so deployed credentials and history are not rewritten.
+
+#### Tests and Verification
+
+The backend suite passes `122` tests with the one previously documented TestClient warning.
+Coverage includes successful provisioning, Argon2id verification, role assignment, zero-balance
+reconciliation, audit creation, login with the new credential, duplicate email, validation
+redaction, CSRF, authorization, and transaction rollback. Ruff and Alembic drift checks pass.
+
+The frontend passes `21` component tests plus formatting, lint, type-check, and production build.
+The local Chromium money happy path passes `1` test, and the responsive administrator/customer
+suite passes `4` tests across desktop and mobile. A rendered browser review found that the password
+confirmation input stretched after validation; aligning the paired fields to the start fixed the
+layout before completion. I then manually created a customer as an administrator and confirmed the
+new account and credentials worked.
+
+#### Next Step
+
+Publish the reviewed commits, redeploy through Coolify, verify the refreshed production interface,
+and then record the required demonstration video. Do not begin the remaining M13/M14 backlog.
 
 ---
 

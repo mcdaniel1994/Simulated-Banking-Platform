@@ -1,4 +1,4 @@
-import { ChevronRight, Landmark, Lightbulb } from "lucide-react";
+import { ChevronRight, Landmark, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -61,8 +61,7 @@ export function CustomerDashboard() {
         Accounts
       </h1>
       <p className="mt-3 text-lg text-ink-700">
-        View your accounts, balances, and recent activity in this simulated
-        environment.
+        View your accounts, balances, and recent activity in one place.
       </p>
 
       <section className="mt-8 grid overflow-hidden rounded-xl border border-stone-200 bg-white shadow-card lg:grid-cols-2">
@@ -77,12 +76,10 @@ export function CustomerDashboard() {
             <Landmark aria-hidden="true" className="size-7" />
           </span>
           <div>
-            <p className="font-bold text-ink-950">
-              All balances are sample data
-            </p>
+            <p className="font-bold text-ink-950">Secure account access</p>
             <p className="mt-1 leading-6 text-ink-700">
-              Use this environment to practice financial skills and explore
-              banking concepts.
+              Your account details and available actions are protected by your
+              signed-in customer profile.
             </p>
           </div>
         </div>
@@ -131,14 +128,13 @@ export function CustomerDashboard() {
 
       <aside className="mt-6 flex items-start gap-4 rounded-xl border border-warning-200 bg-warning-50 p-5">
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-warning-200 text-warning-700">
-          <Lightbulb aria-hidden="true" className="size-6" />
+          <ShieldCheck aria-hidden="true" className="size-6" />
         </span>
         <div>
-          <p className="font-bold text-ink-950">Learning tip</p>
+          <p className="font-bold text-ink-950">Review your activity</p>
           <p className="mt-1 leading-6 text-ink-700">
-            Review your recent transactions to see how each simulated decision
-            affects your balance. You can deposit, withdraw, or transfer between
-            your accounts.
+            Transaction history shows how deposits, withdrawals, and transfers
+            affect each account balance.
           </p>
         </div>
       </aside>

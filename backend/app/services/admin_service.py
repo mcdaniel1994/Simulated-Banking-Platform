@@ -3,12 +3,15 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DatabaseSession
 
-from app.errors import NotFoundError
+from app.core.security import hash_password
+from app.errors import EmailAlreadyExistsError, NotFoundError
 from app.models import (
     Account,
     AccountStatus,
+    AccountType,
     AuditEvent,
     Session,
     Transaction,
@@ -65,6 +68,66 @@ def list_customers(db: DatabaseSession) -> list[User]:
 
     # Filtering in SQL prevents administrator identities from reaching response shaping.
     return list(db.scalars(select(User).where(User.role == UserRole.CUSTOMER).order_by(User.id)))
+
+
+def create_customer(
+    db: DatabaseSession,
+    *,
+    admin: User,
+    email: str,
+    password: str,
+    first_name: str,
+    last_name: str,
+) -> User:
+    """Create a customer, initial checking account, and audit evidence atomically."""
+
+    # A friendly conflict is checked before hashing, while the database uniqueness constraint
+    # remains the final authority if two administrators submit the same address concurrently.
+    if db.scalar(select(User.id).where(User.email == email)) is not None:
+        raise EmailAlreadyExistsError
+
+    customer = User(
+        email=email,
+        password_hash=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        role=UserRole.CUSTOMER,
+        is_active=True,
+    )
+    try:
+        db.add(customer)
+        db.flush()
+
+        # Prefix 2 is reserved for administrator-created accounts; the SQL user ID guarantees
+        # uniqueness without exposing credentials or relying on collision-prone random retries.
+        account = Account(
+            user=customer,
+            account_number=f"2{customer.id:09d}",
+            account_type=AccountType.CHECKING,
+            balance=Decimal("0.00"),
+            status=AccountStatus.ACTIVE,
+        )
+        db.add_all(
+            [
+                account,
+                AuditEvent(
+                    actor=admin,
+                    event_type="user_created",
+                    entity_type="user",
+                    entity_id=str(customer.id),
+                    event_metadata={"initial_account_type": AccountType.CHECKING.value},
+                ),
+            ]
+        )
+        db.commit()
+    except IntegrityError:
+        # A concurrent duplicate submission is normalized to the same safe field error.
+        db.rollback()
+        raise EmailAlreadyExistsError from None
+    except Exception:
+        db.rollback()
+        raise
+    return customer
 
 
 def get_customer_detail(

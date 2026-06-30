@@ -6,6 +6,7 @@ import { AccountDetail } from "../features/accounts/AccountDetail";
 import { MoneyForm, TransferForm } from "../features/money/MoneyForms";
 import {
   AdminDashboardPage,
+  CreateCustomerPage,
   CustomerDetailPage,
   CustomerListPage,
 } from "../features/admin/AdminPages";
@@ -102,6 +103,14 @@ export function AppRoutes() {
           element={
             <RequireAuth role="ADMIN">
               <CustomerListPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="admin/customers/new"
+          element={
+            <RequireAuth role="ADMIN">
+              <CreateCustomerPage />
             </RequireAuth>
           }
         />

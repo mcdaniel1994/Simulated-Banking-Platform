@@ -68,14 +68,14 @@ export function LoginPage() {
     <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
       <section>
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-forest-700">
-          Secure demo access
+          Secure account access
         </p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-forest-950">
           Welcome to Northstar
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-8 text-ink-700">
-          Sign in with a seeded demonstration identity to explore exact money
-          handling, secure sessions, and role-based banking workflows.
+          Sign in to manage accounts, review activity, and access the tools
+          available to your role.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -86,13 +86,22 @@ export function LoginPage() {
           >
             <span className="flex items-center gap-3 font-bold text-forest-950">
               <UserRound aria-hidden="true" className="size-5" />
-              Customer demo
+              Customer access
             </span>
-            <span className="mt-2 block break-all text-sm text-ink-700">
+            <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Email
+            </span>
+            <span className="mt-1 block break-all text-sm text-ink-700">
               alex.customer@demo.bank.test
             </span>
+            <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Password
+            </span>
+            <span className="mt-1 block break-all text-sm text-ink-700">
+              CustomerDemo!2026
+            </span>
             <span className="mt-3 block text-sm font-semibold text-forest-700">
-              Use customer demo
+              Fill customer credentials
             </span>
           </button>
           <button
@@ -102,13 +111,22 @@ export function LoginPage() {
           >
             <span className="flex items-center gap-3 font-bold text-forest-950">
               <ShieldCheck aria-hidden="true" className="size-5" />
-              Administrator demo
+              Administrator access
             </span>
-            <span className="mt-2 block break-all text-sm text-ink-700">
+            <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Email
+            </span>
+            <span className="mt-1 block break-all text-sm text-ink-700">
               admin@demo.bank.test
             </span>
+            <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Password
+            </span>
+            <span className="mt-1 block break-all text-sm text-ink-700">
+              AdminDemo!2026
+            </span>
             <span className="mt-3 block text-sm font-semibold text-forest-700">
-              Use administrator demo
+              Fill administrator credentials
             </span>
           </button>
         </div>
@@ -117,7 +135,7 @@ export function LoginPage() {
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-card sm:p-8">
         <h2 className="text-2xl font-bold text-ink-950">Log in</h2>
         <p className="mt-2 text-ink-700">
-          Demo credentials are public and contain no real customer data.
+          Use one of the provided access profiles or enter your credentials.
         </p>
         {formError && (
           <div className="mt-5">

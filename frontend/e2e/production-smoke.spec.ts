@@ -32,7 +32,7 @@ test("customer uses and revokes a session through the HTTPS origin", async ({
   // One cent proves the protected mutation path while minimizing demo-data drift.
   await page.goto(`/accounts/${accountId}/deposit`);
   await page.getByLabel("Amount (USD)").fill("0.01");
-  await page.getByRole("button", { name: "Add demo funds" }).click();
+  await page.getByRole("button", { name: "Add funds" }).click();
   await expect(page.getByTestId("account-balance")).not.toHaveAttribute(
     "data-balance",
     balanceBefore!,
@@ -53,7 +53,7 @@ test("administrator reaches the protected dashboard and logs out", async ({
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(
-    page.getByRole("heading", { name: "Learning bank activity" }),
+    page.getByRole("heading", { name: "Banking activity" }),
   ).toBeVisible();
   await expectSecureSessionCookie(context);
 
