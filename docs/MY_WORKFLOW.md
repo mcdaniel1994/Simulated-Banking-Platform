@@ -3202,9 +3202,11 @@ Local verification proved:
 - Backend 116 tests and frontend 12 tests pass with all static/build/drift gates; the existing
   TestClient dependency warning remains.
 
-The next step is to commit this clean deployment preparation, publish `main` to GitHub, and connect
-that Git source to Coolify. Live DNS, Supabase credentials, trusted TLS, browser smoke, and video
-evidence remain external.
+The deployment preparation was committed and published as a public portfolio repository at
+`https://github.com/mcdaniel1994/Simulated-Banking-Platform`. I verified that remote `main` matched
+local commit `f88fb35`, the working tree was clean, and GitHub's secret-scanning alerts API
+returned zero alerts. The next step is to connect that Git source to Coolify. Live DNS, Supabase
+credentials, trusted TLS, browser smoke, and video evidence remain external.
 
 ---
 

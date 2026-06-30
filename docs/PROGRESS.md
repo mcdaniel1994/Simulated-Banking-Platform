@@ -9,9 +9,9 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Coolify deployment configuration verified; prepare GitHub publication
-- Last completed: Coolify-owned TLS/internal-nginx configuration and local runtime verification
-- Next action: Commit deployment preparation, push clean `main` to GitHub, then connect Coolify
+- Current task: Connect the published GitHub repository to Coolify
+- Last completed: Public GitHub publication of verified Coolify deployment configuration
+- Next action: Create the Coolify application from `main` using `compose.coolify.yaml`
 - Current blocker: live deployment access/values and the required user-recorded demo video
 - Last updated: 2026-06-30
 

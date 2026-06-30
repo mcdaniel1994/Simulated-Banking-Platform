@@ -24,16 +24,18 @@ points, and security boundaries.
 - Hostinger state: VPS is running Ubuntu 24.04.4 LTS; public IP, SSH username, and port were
   verified in hPanel but are intentionally not recorded in this public-repository document
 - Coolify state: Coolify is already installed on the VPS
-- Planned delivery path: push this repository to GitHub, connect the Git source to Coolify, and
-  deploy from the reviewed Compose configuration
+- Planned delivery path: connect the public GitHub repository to Coolify and deploy from the
+  reviewed Compose configuration
 - Current access method: VS Code Remote SSH using the VPS root username/IP and password
 - Coolify repository state: `compose.coolify.yaml`, the internal nginx target, and the environment
   template are implemented and locally verified
-- Current external task: commit the reviewed Coolify configuration and publish `main` to GitHub
-- Current stopping point: stop after the clean repository is visible on GitHub; do not deploy until
-  the domain and Supabase values are ready
-- Not started externally: GitHub publication, Coolify application setup, DNS, Supabase, production
-  environment, deployment, live smoke test, and video recording
+- GitHub state: the repository is public at
+  `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; remote `main` matched local commit
+  `f88fb35`, and GitHub reported zero secret-scanning alerts after publication
+- Current external task: connect the public GitHub repository to Coolify
+- Current stopping point: do not deploy until the domain and Supabase values are ready
+- Not started externally: Coolify application setup, DNS, Supabase, production environment,
+  deployment, live smoke test, and video recording
 
 ## Deployment Architecture Adjustment — Approved
 
@@ -152,11 +154,11 @@ Goal: make the reviewed repository available to Coolify through an authorized Gi
 
 Evidence:
 
-- [ ] GitHub repository created under the intended account/organization
-- [ ] Local `main` pushed without ignored environment files or credentials
-- [ ] GitHub visibility (public/private) chosen deliberately
-- [ ] Remote default branch and latest commit recorded
-- [ ] GitHub secret scanning shows no exposed credentials
+- [x] GitHub repository created under the intended account
+- [x] Local `main` pushed without ignored environment files or credentials
+- [x] Public visibility chosen deliberately for the portfolio source code
+- [x] Remote default branch is `main`; publication commit recorded as `f88fb35`
+- [x] GitHub secret-scanning alerts API returned zero alerts after publication
 
 If the repository is private, prefer Coolify's GitHub App or a repository-scoped deploy key.
 Never paste a personal access token into a repository file.
@@ -278,3 +280,4 @@ Append verified milestones here without secrets.
 |---|---|---|---|---|
 | 2026-06-30 | 1 — VPS and SSH | COMPLETE | VPS running Ubuntu 24.04.4 LTS; connection values verified in hPanel; existing VS Code Remote SSH password login confirmed; Coolify already installed | Prepare Coolify-specific repository configuration |
 | 2026-06-30 | Architecture | COMPLETE LOCALLY | Coolify owns public TLS; internal nginx serves SPA and preserves `/api`; backend stays private; no host ports; manual nginx/TLS path still builds | Commit and publish clean `main` to GitHub |
+| 2026-06-30 | 2 — GitHub publication | COMPLETE | Public repository published; remote `main` matched `f88fb35`; GitHub secret-scanning alerts API returned zero alerts | Connect the repository to Coolify |

@@ -1,5 +1,7 @@
 # Northstar Learning Bank
 
+#### Source Code: [GitHub](https://github.com/mcdaniel1994/Simulated-Banking-Platform)
+#### Live Demo: Not deployed yet
 #### Video Demo: Not recorded yet — follow [the demo-video checklist](docs/DEMO_VIDEO.md)
 
 ## Description
