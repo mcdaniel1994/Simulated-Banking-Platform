@@ -796,7 +796,7 @@ Completion evidence:
   warning`; Prettier, ESLint, TypeScript, Vite build, Ruff, and Alembic drift gates passed.
 - Manual verification: real FastAPI/Vite/PostgreSQL flow asserted source and destination balance
   deltas plus DEPOSIT, WITHDRAWAL, and TRANSFER_OUT history.
-- Commit: recorded after the Phase 35 commit is created.
+- Commit: `5962e5e test(e2e): add customer happy-path end-to-end flow`
 - Notes: the test reads current seeded demo balances and makes small additive changes without
   destructive database reset. Failure traces/screenshots and readiness-gated servers are configured.
 
