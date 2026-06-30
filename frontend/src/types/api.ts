@@ -48,3 +48,28 @@ export interface Transaction {
   reference_id: number | null;
   created_at: string;
 }
+
+export interface AdminDashboard {
+  customer_count: number;
+  account_count: number;
+  total_simulated_balance: string;
+  recent_transaction_count: number;
+  recent_window_days: number;
+}
+
+export interface AdminCustomer {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AdminCustomerDetail {
+  customer: AdminCustomer;
+  accounts: Account[];
+  transactions: Transaction[];
+  transaction_limit: number;
+  transaction_offset: number;
+}

@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M8 — Customer Frontend
-- Current phase: Phase 32 — Money interfaces (complete)
-- Current task: Begin Phase 33 admin interface
-- Last completed: Phase 32 — Deposit, withdrawal, and transfer interfaces
-- Next action: Implement Phase 33 only
+- Current milestone: M9 — Admin Frontend
+- Current phase: Phase 33 — Admin interface (complete)
+- Current task: Begin Phase 34 consolidated frontend tests
+- Last completed: Phase 33 — Admin dashboard, customer detail, and status controls
+- Next action: Implement Phase 34 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -28,7 +28,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M6 — Backend Finalization (BACKEND-COMPLETE) | COMPLETE | 2026-06-29 | 2026-06-29 | Checkpoint satisfied |
 | M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
 | M8 — Customer Frontend | IN PROGRESS | 2026-06-29 |  | Phase 30 complete |
-| M9 — Admin Frontend | NOT STARTED |  |  |  |
+| M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | NOT STARTED |  |  |  |
 | M11 — Deployment | NOT STARTED |  |  |  |
 | M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
@@ -740,7 +740,7 @@ Status: COMPLETE
 Completion evidence:
 - Tests: `9 passed`; formatting, ESLint, TypeScript, and build passed.
 - Manual verification: forms are linked from account detail and return to refetched detail/history.
-- Commit: recorded in the Phase 33 update after the Phase 32 commit is created.
+- Commit: `dbd9617 feat(frontend): add deposit, withdrawal, and transfer forms`
 - Notes: exact string amounts and CSRF headers are asserted; server errors remain authoritative.
 
 ---
@@ -748,19 +748,20 @@ Completion evidence:
 ## M9 — Admin Frontend `[SUBMISSION]`
 
 ### Phase 33 — Admin dashboard, customer management, status controls
-Status: NOT STARTED
-- [ ] Admin dashboard (stats)
-- [ ] Customer list → detail drill-down
-- [ ] Activate/deactivate + freeze/unfreeze (CSRF) with refetch
-- [ ] Add admin UI tests (role nav, CSRF mutation, customer denied)
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Admin dashboard (stats)
+- [x] Customer list → detail drill-down
+- [x] Activate/deactivate + freeze/unfreeze (CSRF) with refetch
+- [x] Add admin UI tests (role nav, CSRF mutation, customer denied)
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `10 passed`; formatting, ESLint, TypeScript, and build passed.
+- Manual verification: ADMIN browser session displayed exact aggregates and both customers; prior
+  CUSTOMER guard coverage proves admin routes redirect to unauthorized.
+- Commit: recorded in the Phase 34 update after the Phase 33 commit is created.
+- Notes: status mutations use CSRF and refetch; no admin path grants account ownership.
 
 ---
 

@@ -2954,6 +2954,15 @@ rules.
 
 ---
 
+### Entry — 2026-06-29 — Phase 33: Administrator Interface
+
+The admin UI now displays exact aggregate statistics, lists safe customer identity fields, drills
+into customer accounts, and offers activation/freeze controls. Every mutation uses CSRF and
+refetches protected detail data after success. Browser verification used a real ADMIN session;
+frontend role guards remain convenience controls over independently authorized API endpoints.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I

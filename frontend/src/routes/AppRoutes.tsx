@@ -4,10 +4,14 @@ import { useAuth } from "../features/auth/AuthContext";
 import { CustomerDashboard } from "../features/accounts/CustomerDashboard";
 import { AccountDetail } from "../features/accounts/AccountDetail";
 import { MoneyForm, TransferForm } from "../features/money/MoneyForms";
+import {
+  AdminDashboardPage,
+  CustomerDetailPage,
+  CustomerListPage,
+} from "../features/admin/AdminPages";
 import { AppLayout } from "../layouts/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
 import {
-  AdminHome,
   LandingPage,
   NotFoundPage,
   UnauthorizedPage,
@@ -81,7 +85,23 @@ export function AppRoutes() {
           path="admin"
           element={
             <RequireAuth role="ADMIN">
-              <AdminHome />
+              <AdminDashboardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="admin/customers"
+          element={
+            <RequireAuth role="ADMIN">
+              <CustomerListPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="admin/customers/:userId"
+          element={
+            <RequireAuth role="ADMIN">
+              <CustomerDetailPage />
             </RequireAuth>
           }
         />
