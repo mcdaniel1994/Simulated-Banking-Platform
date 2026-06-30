@@ -2936,6 +2936,14 @@ case that binary floating point commonly mishandles.
 
 ---
 
+### Entry — 2026-06-29 — Phase 31: Account Detail and Transaction History
+
+Account detail loads the owned resource and its newest-first transaction page from separate
+backend-authorized endpoints. Previous/next controls use the frozen `limit`/`offset` contract, and
+the UI explicitly covers loading, empty, and safe error states.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I

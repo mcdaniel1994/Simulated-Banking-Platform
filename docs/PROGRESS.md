@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M8 — Customer Frontend
-- Current phase: Phase 30 — Customer dashboard (complete)
-- Current task: Begin Phase 31 account detail and history
-- Last completed: Phase 30 — Customer dashboard
-- Next action: Implement Phase 31 only
+- Current phase: Phase 31 — Account detail and transaction history (complete)
+- Current task: Begin Phase 32 money forms
+- Last completed: Phase 31 — Account detail and transaction history
+- Next action: Implement Phase 32 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -709,23 +709,24 @@ Status: COMPLETE
 Completion evidence:
 - Tests: `7 passed`; formatting, ESLint, TypeScript, and build passed.
 - Manual verification: responsive card grid and role-gated customer route are browser-ready.
-- Commit: recorded in the Phase 31 update after the Phase 30 commit is created.
+- Commit: `4182976 feat(frontend): add customer dashboard with account cards and combined balance`
 - Notes: combined balances use `bigint` cents; ownership remains backend-enforced.
 
 ### Phase 31 — Account detail & transaction history
-Status: NOT STARTED
-- [ ] Account detail (balance + recent transactions)
-- [ ] Paginated history (limit/offset controls)
-- [ ] Loading/empty/error states
-- [ ] Add history component tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Account detail (balance + recent transactions)
+- [x] Paginated history (limit/offset controls)
+- [x] Loading/empty/error states
+- [x] Add history component tests
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `8 passed`; lint, type-check, and production build passed.
+- Manual verification: account links route to owned detail/history views with responsive controls.
+- Commit: recorded in the Phase 32 update after the Phase 31 commit is created.
+- Notes: history uses backend `limit=10&offset=` pagination; guessed account IDs remain protected
+  by the backend ownership dependency.
 
 ### Phase 32 — Deposit / withdrawal / transfer interfaces
 Status: NOT STARTED

@@ -34,3 +34,17 @@ export interface Account {
   created_at: string;
   updated_at: string;
 }
+
+export type TransactionType =
+  "DEPOSIT" | "WITHDRAWAL" | "TRANSFER_IN" | "TRANSFER_OUT";
+
+export interface Transaction {
+  id: number;
+  account_id: number;
+  transaction_type: TransactionType;
+  amount: string;
+  description: string;
+  balance_after: string;
+  reference_id: number | null;
+  created_at: string;
+}

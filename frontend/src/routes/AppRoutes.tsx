@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "../features/auth/AuthContext";
 import { CustomerDashboard } from "../features/accounts/CustomerDashboard";
+import { AccountDetail } from "../features/accounts/AccountDetail";
 import { AppLayout } from "../layouts/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
 import {
@@ -40,6 +41,14 @@ export function AppRoutes() {
           element={
             <RequireAuth role="CUSTOMER">
               <CustomerDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="accounts/:accountId"
+          element={
+            <RequireAuth role="CUSTOMER">
+              <AccountDetail />
             </RequireAuth>
           }
         />
