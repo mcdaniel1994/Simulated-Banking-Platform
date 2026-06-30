@@ -18,7 +18,7 @@ is still required and is not being represented as complete.
 | 10 | Satisfied | CSRF tests reject missing/mismatched tokens with `CSRF_INVALID` and accept a matching cookie/header pair. |
 | 11 | Satisfied | Admin API/UI tests cover list, detail, deactivate/reactivate, freeze/unfreeze, CSRF, and the rule that admins are not account owners. |
 | 12 | Satisfied | Error/audit tests enforce the common envelope, decimal-string money, sanitized validation, and absence of tokens, cookies, credentials, SQL, account numbers, and sensitive headers in errors/logs. |
-| 13 | **Blocked externally** | nginx/Compose/TLS/Supabase templates exist; local HTTPS single-origin migration/seed/API/browser smoke passes. A real DNS name, VPS, trusted certificate, and Supabase pooler credentials were unavailable, so no live deployment is claimed. |
+| 13 | **Blocked externally** | Manual and Coolify Compose/TLS/Supabase templates exist; local single-origin migration/seed/API/browser smoke passes. A real DNS name, Coolify deployment, trusted certificate, and Supabase pooler credentials were unavailable, so no live deployment is claimed. |
 | 14 | Satisfied | Full backend suite: 116 passed with one documented dependency warning. Frontend: 12 passed. Customer happy-path E2E: 1 passed. Local production HTTPS smoke: 2 passed. |
 | 15 | **Blocked externally** | Root README, design/trade-offs, install/deploy docs, and AI disclosure exist. The required at-most-three-minute video has a complete script/checklist but has not been recorded or uploaded. |
 
@@ -27,11 +27,10 @@ is still required and is not being represented as complete.
 ### Criterion 13
 
 1. Obtain a domain and point DNS at the VPS.
-2. Install Docker/Compose on the VPS and clone this repository.
-3. Create an ignored `.env.production` using `.env.production.example`.
-4. Supply the Supabase pooler URL/password, a random production session secret, and trusted
-   certificate/key host paths.
-5. Follow `docs/DEPLOYMENT.md` to build, migrate, seed, and start backend/nginx.
+2. Push the reviewed repository to GitHub and connect it to the existing Coolify installation.
+3. Configure `compose.coolify.yaml` with masked Coolify environment values.
+4. Supply the Supabase pooler URL/password and a random production session secret.
+5. Assign the trusted HTTPS domain to the Coolify `gateway` service, deploy, migrate, and seed.
 6. Run `PRODUCTION_BASE_URL=https://REAL_DOMAIN npm run test:e2e:production`.
 7. Record the live URL, cookie inspection, Supabase migration revision, and smoke results here.
 

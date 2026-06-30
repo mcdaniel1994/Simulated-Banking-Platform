@@ -149,14 +149,18 @@ multiple replicas cannot race to change the schema.
 
 ## Production Deployment
 
-Production uses nginx to serve the built SPA at `/`, terminate TLS, and proxy `/api/*` unchanged
-to the private backend container. PostgreSQL is expected through a TLS-enabled Supabase pooler URL.
-Copy `.env.production.example` to an ignored `.env.production` on the deployment host and follow
-[the deployment runbook](docs/DEPLOYMENT.md).
+The selected deployment pushes this repository to GitHub and lets Coolify build
+`compose.coolify.yaml`. Coolify's proxy owns public HTTPS and certificate renewal; an internal
+nginx container serves the SPA at `/` and proxies `/api/*` unchanged to the private FastAPI
+container. PostgreSQL is reached through a TLS-enabled Supabase pooler URL.
 
-The repository contains no domain, certificate, VPS credentials, Supabase password, or production
-session secret. Local production-shaped HTTPS verification passes with a temporary self-signed
-certificate, but a real deployment must supply trusted external values.
+The manual `compose.production.yaml` path remains available as a verified fallback, but it must not
+be combined with Coolify because it binds host ports and owns TLS itself. Follow
+[the deployment runbook](docs/DEPLOYMENT.md) and the
+[Hostinger/Coolify workflow](docs/HOSTINGER_DEPLOYMENT_WORKFLOW.md).
+
+The repository contains no domain, VPS credentials, Supabase password, or production session
+secret. A real Coolify deployment must supply those external values.
 
 ## Testing
 
@@ -197,8 +201,9 @@ The complete acceptance evidence and any externally blocked criteria are recorde
   post-submission extension.
 - **Single origin:** serving SPA and API together keeps strict cookies and CSRF behavior
   straightforward. It trades independent frontend hosting for a smaller security surface.
-- **nginx instead of Caddy:** nginx provides transferable reverse-proxy experience, at the cost of
-  explicit certificate provisioning and renewal.
+- **Coolify TLS with internal nginx:** Coolify's proxy owns public HTTPS and automatic certificate
+  renewal, while nginx retains one application gateway for SPA fallback and prefix-preserving
+  `/api` routing. The manual nginx-owned TLS path remains a fallback.
 - **Synchronous SQLAlchemy:** the money path is easier to teach and reason about with explicit
   transactions and row locks. Connection pooling still bounds database concurrency.
 - **Stored balance plus append-only history:** balance is an atomically maintained cache for fast

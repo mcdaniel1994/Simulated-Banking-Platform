@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !.env.production.example
+!.env.coolify.example
 backend/.venv
 backend/__pycache__
 backend/.pytest_cache

@@ -79,6 +79,11 @@ the spec and is *not* repeated as an open decision.
 - **Recorded decision:** **(b) nginx**, selected in Phase 0 and documented in
   `MY_WORKFLOW.md`. The project intentionally accepts manual certificate provisioning in exchange
   for learning the more widely used nginx configuration model.
+- **Deployment-environment amendment (D31, 2026-06-30):** the selected Hostinger VPS already runs
+  Coolify. For the GitHub-to-Coolify path, Coolify's configured proxy terminates public TLS and
+  nginx remains the internal SPA/API gateway. The verified manual nginx-owned TLS path remains a
+  fallback. This supersedes D3's operational TLS consequence without rewriting the original
+  decision.
 - **Blocks:** Ph37 only.
 
 ### D4 — Repository-layer depth

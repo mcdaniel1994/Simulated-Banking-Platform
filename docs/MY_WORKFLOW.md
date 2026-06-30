@@ -2738,6 +2738,7 @@ consequences when I resolve each one, then add new rows when other important dec
 | D28 | 2026-06-29 | Keep admin customer drill-down queries separate from customer ownership dependencies | Phase 25 admin reads | Reuse `OwnedAccount`; dedicated admin queries | Admins need management visibility but must not become account owners. | Admin reads filter CUSTOMER identities directly and share only response/pagination contracts. |
 | D29 | 2026-06-29 | Restrict account status controls to ACTIVE/FROZEN and atomically revoke sessions on deactivation | Phase 26 admin controls | Free-form status; reopen CLOSED; separate revocation/audit commits | A narrow state machine prevents accidental reopening; one transaction prevents active sessions surviving a recorded deactivation. | CLOSED requires a future explicit workflow; all status mutations require ADMIN plus CSRF. |
 | D30 | 2026-06-29 | Complete D2 audit wiring and log only sanitized event names plus numeric identifiers | Phase 27 backend finalization | Defer audit gaps; route-local auditing; shared boundaries; rich log context | Shared boundaries prevent omissions, and excluding sensitive values by construction is safer than masking after interpolation. | All 11 MVP event types are present; correlation IDs and structured logging remain hardening. |
+| D31 | 2026-06-30 | Let Coolify terminate public TLS while retaining nginx as the internal SPA/API gateway | Hostinger VPS already runs Coolify; manual Phase 37 nginx owns ports 80/443 and TLS | Deploy manual Compose unchanged; bypass Coolify; Coolify TLS plus internal nginx | One public TLS owner avoids host-port and certificate conflicts while preserving the required single origin and nginx `/api` behavior. | Coolify builds `compose.coolify.yaml`, exposes only gateway port 80 internally, manages the trusted certificate, and keeps FastAPI private; `compose.production.yaml` remains the manual fallback. |
 
 ### Debugging Log
 
@@ -3170,6 +3171,40 @@ remain untouched.
 - `frontend/playwright.config.ts` (isolate the one happy-path spec)
 - `docs/PROGRESS.md`
 - `docs/MY_WORKFLOW.md`
+
+---
+
+### Entry — 2026-06-30 — Hostinger/Coolify Deployment Preparation
+
+The Hostinger VPS is running Ubuntu 24.04.4 LTS, Coolify is already installed, and the existing VS
+Code Remote SSH password workflow is sufficient for current administration. Public-key
+authentication remains an optional security improvement rather than a submission blocker.
+
+The intended delivery path changed from manual repository cloning to GitHub → Coolify. That
+created a concrete conflict: the Phase 37 manual Compose file binds host ports 80/443 and mounts
+TLS keys, while Coolify already owns the public proxy and certificate lifecycle. I recorded D31
+instead of silently replacing D3.
+
+I added a separate `compose.coolify.yaml` and nginx image target. Coolify can assign its HTTPS
+domain only to the internal port-80 gateway. The gateway serves the React SPA and forwards
+`/api/*` unchanged to the private FastAPI service. Neither gateway nor backend publishes a host
+port, and no application container receives a public TLS private key. Supabase remains external
+over a TLS pooler URL.
+
+Local verification proved:
+
+- Coolify and manual Compose files parse.
+- Coolify images build; migration and seed jobs succeed.
+- Backend and gateway become healthy.
+- nginx serves the SPA and `/api/health`, passes config validation, and preserves the API prefix.
+- Docker reports no host port bindings for gateway or backend.
+- The manual TLS gateway target still builds.
+- Backend 116 tests and frontend 12 tests pass with all static/build/drift gates; the existing
+  TestClient dependency warning remains.
+
+The next step is to commit this clean deployment preparation, publish `main` to GitHub, and connect
+that Git source to Coolify. Live DNS, Supabase credentials, trusted TLS, browser smoke, and video
+evidence remain external.
 
 ---
 

@@ -9,11 +9,11 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
 - Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: External deployment and demo-video actions remain
-- Last completed: Phase 38 repository documentation, acceptance audit, and complete local gates
-- Next action: Deploy with real VPS/Supabase/domain values, record/upload video, then submit
+- Current task: Coolify deployment configuration verified; prepare GitHub publication
+- Last completed: Coolify-owned TLS/internal-nginx configuration and local runtime verification
+- Next action: Commit deployment preparation, push clean `main` to GitHub, then connect Coolify
 - Current blocker: live deployment access/values and the required user-recorded demo video
-- Last updated: 2026-06-29
+- Last updated: 2026-06-30
 
 ## Milestone progress
 
@@ -30,7 +30,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M8 — Customer Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 30–32 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
-| M11 — Deployment | BLOCKED | 2026-06-29 |  | Repository/local work complete; live deploy external |
+| M11 — Deployment | BLOCKED | 2026-06-29 |  | Manual and Coolify repository paths verified; live deploy external |
 | M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Repository work complete; criteria 13/15 external |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
