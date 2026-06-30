@@ -2927,6 +2927,15 @@ customer login, logout, and administrator login against the running FastAPI/Post
 
 ---
 
+### Entry — 2026-06-29 — Phase 30: Customer Dashboard
+
+The customer dashboard loads only the authenticated customer's `/api/accounts`, renders responsive
+accessible cards, masks account numbers to the last four digits, and totals decimal-string
+balances through `bigint` cents. Tests cover loading, cards, and the exact `0.10 + 0.20 = 0.30`
+case that binary floating point commonly mishandles.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I

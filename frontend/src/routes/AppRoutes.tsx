@@ -1,11 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "../features/auth/AuthContext";
+import { CustomerDashboard } from "../features/accounts/CustomerDashboard";
 import { AppLayout } from "../layouts/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
 import {
   AdminHome,
-  CustomerHome,
   LandingPage,
   NotFoundPage,
   UnauthorizedPage,
@@ -39,7 +39,7 @@ export function AppRoutes() {
           path="dashboard"
           element={
             <RequireAuth role="CUSTOMER">
-              <CustomerHome />
+              <CustomerDashboard />
             </RequireAuth>
           }
         />

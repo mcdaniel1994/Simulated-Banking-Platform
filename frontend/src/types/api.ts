@@ -21,3 +21,16 @@ export interface ApiErrorEnvelope {
 export interface HealthResponse {
   status: "ok";
 }
+
+export type AccountStatus = "ACTIVE" | "FROZEN" | "CLOSED";
+export type AccountType = "CHECKING" | "SAVINGS";
+
+export interface Account {
+  id: number;
+  account_number: string;
+  account_type: AccountType;
+  balance: string;
+  status: AccountStatus;
+  created_at: string;
+  updated_at: string;
+}

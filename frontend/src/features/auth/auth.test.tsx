@@ -40,19 +40,21 @@ describe("authentication flow", () => {
   });
 
   it("renders customer navigation from the SQL-backed current user", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({
-        id: 2,
-        email: "alex.customer@demo.bank.test",
-        first_name: "Alex",
-        last_name: "Carter",
-        role: "CUSTOMER",
-        is_active: true,
-      }),
-    );
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 2,
+          email: "alex.customer@demo.bank.test",
+          first_name: "Alex",
+          last_name: "Carter",
+          role: "CUSTOMER",
+          is_active: true,
+        }),
+      )
+      .mockResolvedValueOnce(Response.json([]));
     renderApp("/dashboard");
     expect(
-      await screen.findByRole("heading", { name: "Customer dashboard" }),
+      await screen.findByText("No accounts are available."),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Accounts" })).toBeInTheDocument();
     await waitFor(() =>

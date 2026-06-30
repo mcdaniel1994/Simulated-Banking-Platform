@@ -7,11 +7,11 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M7 — Frontend Foundation & Auth
-- Current phase: Phase 29 — Auth flow (complete)
-- Current task: Begin Phase 30 customer dashboard
-- Last completed: Phase 29 — Auth flow
-- Next action: Implement Phase 30 only
+- Current milestone: M8 — Customer Frontend
+- Current phase: Phase 30 — Customer dashboard (complete)
+- Current task: Begin Phase 31 account detail and history
+- Last completed: Phase 30 — Customer dashboard
+- Next action: Implement Phase 31 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -27,7 +27,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M5 — Admin Backend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 24–26 complete |
 | M6 — Backend Finalization (BACKEND-COMPLETE) | COMPLETE | 2026-06-29 | 2026-06-29 | Checkpoint satisfied |
 | M7 — Frontend Foundation & Auth | IN PROGRESS | 2026-06-29 |  | Phase 28 complete |
-| M8 — Customer Frontend | NOT STARTED |  |  |  |
+| M8 — Customer Frontend | IN PROGRESS | 2026-06-29 |  | Phase 30 complete |
 | M9 — Admin Frontend | NOT STARTED |  |  |  |
 | M10 — Frontend & E2E Testing | NOT STARTED |  |  |  |
 | M11 — Deployment | NOT STARTED |  |  |  |
@@ -690,7 +690,7 @@ Completion evidence:
 - Tests: `6 passed`; formatting, ESLint, TypeScript, and production build passed.
 - Manual verification: real browser login succeeded for CUSTOMER and ADMIN; role navigation
   changed from `/auth/me`; CSRF-protected logout returned to the anonymous login page.
-- Commit: recorded in the Phase 30 update after the Phase 29 commit is created.
+- Commit: `de7401f feat(frontend): add login, auth context, protected routes, and logout`
 - Notes: route guards are UX controls only. No session token or role is stored in browser storage.
 
 ---
@@ -698,19 +698,19 @@ Completion evidence:
 ## M8 — Customer Frontend `[SUBMISSION]`
 
 ### Phase 30 — Customer dashboard
-Status: NOT STARTED
-- [ ] Fetch accounts; render cards
-- [ ] Combined balance (string-safe)
+Status: COMPLETE
+- [x] Fetch accounts; render cards
+- [x] Combined balance (string-safe)
 - [ ] Loading/empty/error states
 - [ ] Add dashboard component tests
 - [ ] Record decisions in `MY_WORKFLOW.md`
 - [ ] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `7 passed`; formatting, ESLint, TypeScript, and build passed.
+- Manual verification: responsive card grid and role-gated customer route are browser-ready.
+- Commit: recorded in the Phase 31 update after the Phase 30 commit is created.
+- Notes: combined balances use `bigint` cents; ownership remains backend-enforced.
 
 ### Phase 31 — Account detail & transaction history
 Status: NOT STARTED

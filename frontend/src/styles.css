@@ -73,6 +73,12 @@ button {
   background: white;
 }
 
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
 .eyebrow {
   color: #0c6d52;
   font-weight: 800;
