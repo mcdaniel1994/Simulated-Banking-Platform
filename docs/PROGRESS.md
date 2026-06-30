@@ -8,11 +8,11 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M11 — Deployment
-- Current phase: Phase 36 — Dockerize the backend (complete)
-- Current task: Phase 36 verified; continue to Phase 37
-- Last completed: Phase 36 — Dockerize the backend
-- Next action: Build and verify the nginx single-origin deployment stack
-- Current blocker: none
+- Current phase: Phase 37 — Single-origin deployment (repository/local work complete)
+- Current task: Commit Phase 37, then complete Phase 38 submission documentation
+- Last completed: Phase 37 repository configuration and local production-shaped verification
+- Next action: Complete README, submission evidence, and demo-video instructions
+- Current blocker: live VPS/Supabase/trusted-domain deployment requires external access and values
 - Last updated: 2026-06-29
 
 ## Milestone progress
@@ -30,7 +30,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M8 — Customer Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 30–32 complete |
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
-| M11 — Deployment | IN PROGRESS | 2026-06-29 |  | Phase 36 complete |
+| M11 — Deployment | BLOCKED | 2026-06-29 |  | Repository/local work complete; live deploy external |
 | M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
@@ -826,21 +826,28 @@ Completion evidence:
   empty temporary Docker client config; no project credential or repository file was changed.
 
 ### Phase 37 — Single-origin reverse proxy + HTTPS + Supabase
-Status: NOT STARTED
-- [ ] Proxy serves SPA at `/`
-- [ ] Proxy `/api/*` to backend (same origin)
-- [ ] TLS termination (nginx with externally provisioned certificate/key per D3)
-- [ ] Supabase pooler URL; `alembic upgrade head`; seed
-- [ ] Verify prod cookies `Secure` + `SameSite=Strict`
-- [ ] Deploy smoke test
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: BLOCKED (live deployment only; repository/local work complete)
+- [x] Proxy serves SPA at `/`
+- [x] Proxy `/api/*` to backend (same origin)
+- [x] TLS termination (nginx with externally provisioned certificate/key per D3)
+- [x] Production-safe Supabase pooler, `alembic upgrade head`, and seed workflow
+- [x] Verify prod cookies `Secure` + `SameSite=Strict` in local HTTPS smoke
+- [ ] Deploy smoke test on the real VPS/domain/Supabase project
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed repository phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: frontend `12 passed`; Prettier, ESLint, TypeScript, and production build passed; local
+  production Chromium smoke `2 passed` (customer and admin). Production Compose parsed and all
+  backend/gateway images built.
+- Manual verification: local nginx returned HTTP 308, served the SPA over HTTPS with a temporary
+  self-signed certificate, preserved `/api/health` with HTTP 200, and passed `nginx -t`. The
+  migration and idempotent seed jobs succeeded. Chromium verified customer/admin login, role
+  dashboards, `HttpOnly`/`Secure`/`SameSite=Strict` session cookies, one-cent demo deposit, logout,
+  and 401 reuse after revocation.
+- Commit: `build(deploy): single-origin reverse proxy, HTTPS, and Supabase deploy`
+- Notes: A trusted certificate, DNS name, VPS access, Supabase pooler URL/password, and production
+  session secret were not available. No live deployment or Supabase connection is claimed.
 
 ---
 
@@ -896,7 +903,7 @@ Status: NOT STARTED
 ## Current blockers
 | Date | Phase | Blocker | Needed to unblock | Status |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 2026-06-29 | Phase 37 | No live VPS/domain/Supabase credentials or trusted TLS certificate | DNS name, VPS Docker access, Supabase pooler URL/password, production session secret, certificate/key | External |
 
 ## Decisions awaiting confirmation
 | ID | Decision | Recommendation | Blocks | Resolved? |

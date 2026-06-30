@@ -3041,6 +3041,78 @@ M14.
 
 ---
 
+### Entry — 2026-06-29 — Phase 37: Single-Origin nginx Deployment
+
+#### What I Worked On
+
+I built a production gateway image that compiles the React SPA and serves only its static output
+from nginx. nginx redirects HTTP to HTTPS, terminates TLS, falls back to `index.html` for React
+routes, and proxies `/api/*` to the private backend service without replacing the `/api` prefix.
+
+I added a production Compose topology with explicit migration and optional seed jobs, a production
+environment template for Supabase's TLS pooler URL, and a deployment runbook covering certificate
+provisioning, first deploy, verification, updates, and rollback boundaries.
+
+#### Architectural Fit and Security Boundary
+
+The browser sees one HTTPS origin. nginx handles transport and static files, but FastAPI still
+resolves server-side sessions and enforces CSRF, roles, ownership, and banking rules. The backend
+has no published host port in the production topology. Real secrets and certificate material are
+runtime mounts/environment values and are excluded from Git and image layers.
+
+I preserved the D3 nginx decision rather than silently following stale Caddy wording. nginx uses
+external certificate/key files, so certificate issuance and renewal remain host operations.
+
+#### Local Verification
+
+I generated a one-day self-signed localhost certificate under `/private/tmp`, pointed the
+production containers at the existing local PostgreSQL through `host.docker.internal`, and used
+ports 8080/8443. This tested the production shape without changing or resetting developer data.
+
+- Production Compose parsed and the backend, migrate, seed, and gateway images built.
+- Migration and idempotent seed jobs completed.
+- nginx configuration passed `nginx -t`.
+- HTTP returned 308; HTTPS served the SPA; `/api/health` returned 200 through nginx, proving the
+  `/api` prefix was preserved.
+- Frontend format, lint, type-check, 12 component tests, and production build passed.
+- Two Chromium production-smoke tests passed: customer login/dashboard/secure-cookie/deposit/logout
+  and administrator login/dashboard/secure-cookie/logout. Both proved the revoked session then
+  returned 401.
+
+The in-app browser correctly rejected the untrusted local certificate. I did not bypass its
+security interstitial; the scoped Playwright smoke explicitly allowed only the temporary local
+certificate. A real deployment must use a publicly trusted certificate.
+
+#### External Work Still Required
+
+The repository does not have a domain, VPS access, Supabase pooler URL/password, production
+session secret, or trusted TLS certificate. Therefore I cannot truthfully claim live HTTPS,
+Supabase, DNS, or public-cookie verification. `docs/DEPLOYMENT.md` lists the exact values and
+commands required.
+
+#### Files I Changed
+
+- `frontend/Dockerfile`
+- `frontend/.prettierignore`
+- `frontend/playwright.production.config.ts`
+- `frontend/e2e/production-smoke.spec.ts`
+- `frontend/package.json`
+- `.dockerignore`
+- `.env.production.example`
+- `.gitignore`
+- `compose.production.yaml`
+- `deploy/nginx/default.conf.template`
+- `docs/DEPLOYMENT.md`
+- `docs/PROGRESS.md`
+- `docs/MY_WORKFLOW.md`
+
+#### Next Step
+
+Commit the complete repository/local portion of Phase 37 and continue to Phase 38. Keep SPEC
+criterion 13 open until the external live deployment is actually performed.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
