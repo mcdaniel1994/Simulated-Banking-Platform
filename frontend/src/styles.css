@@ -21,6 +21,58 @@ main {
   padding: 5rem 0;
 }
 
+nav,
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+nav {
+  padding: 1rem max(1rem, calc((100% - 68rem) / 2));
+  background: #163f34;
+  color: white;
+}
+
+nav a {
+  color: white;
+}
+
+nav button {
+  margin-left: auto;
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+input,
+select,
+button {
+  padding: 0.7rem;
+  font: inherit;
+}
+
+.error {
+  color: #9b1c1c;
+}
+
+.panel {
+  padding: 1rem;
+  border: 1px solid #c8c1b5;
+  border-radius: 0.75rem;
+  background: white;
+}
+
 .eyebrow {
   color: #0c6d52;
   font-weight: 800;

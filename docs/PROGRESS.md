@@ -8,10 +8,10 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M7 — Frontend Foundation & Auth
-- Current phase: Phase 28 — Frontend project foundation + typed API client (complete)
-- Current task: Begin Phase 29 authentication flow
-- Last completed: Phase 28 — Frontend project foundation + typed API client
-- Next action: Implement Phase 29 only
+- Current phase: Phase 29 — Auth flow (complete)
+- Current task: Begin Phase 30 customer dashboard
+- Last completed: Phase 29 — Auth flow
+- Next action: Implement Phase 30 only
 - Current blocker: none
 - Last updated: 2026-06-29
 
@@ -672,25 +672,26 @@ Completion evidence:
 - Tests: `4 passed`; ESLint, Prettier, TypeScript, and production build gates passed.
 - Manual verification: the Vite `/api` proxy targets the local FastAPI service and the landing
   shell reports health connectivity without exposing authentication material.
-- Commit: recorded in the Phase 29 update after the Phase 28 commit is created.
+- Commit: `6104a21 feat(frontend): scaffold SPA and typed API client with CSRF + money parsing`
 - Notes: requests always include cookie credentials; only the readable CSRF cookie is inspected;
   money totals use integer cents represented by `bigint`.
 
 ### Phase 29 — Auth flow (login, auth state, protected routes, logout)
-Status: NOT STARTED
-- [ ] Auth Context loading `GET /auth/me` on mount
-- [ ] Login page (demo credentials shown)
-- [ ] Public/customer/admin route groups + guards
-- [ ] Logout calling `/auth/logout`
-- [ ] Add auth component tests
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
+Status: COMPLETE
+- [x] Auth Context loading `GET /auth/me` on mount
+- [x] Login page (demo credentials shown)
+- [x] Public/customer/admin route groups + guards
+- [x] Logout calling `/auth/logout`
+- [x] Add auth component tests
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed phase
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: `6 passed`; formatting, ESLint, TypeScript, and production build passed.
+- Manual verification: real browser login succeeded for CUSTOMER and ADMIN; role navigation
+  changed from `/auth/me`; CSRF-protected logout returned to the anonymous login page.
+- Commit: recorded in the Phase 30 update after the Phase 29 commit is created.
+- Notes: route guards are UX controls only. No session token or role is stored in browser storage.
 
 ---
 

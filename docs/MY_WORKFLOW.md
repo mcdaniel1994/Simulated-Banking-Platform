@@ -2917,6 +2917,16 @@ Implement Phase 29 authentication state, login, guards, role navigation, and ser
 
 ---
 
+### Entry — 2026-06-29 — Phase 29: Authentication Flow
+
+Auth Context now resolves the current SQL-backed user through `/api/auth/me`, while login and
+logout use the shared cookie/CSRF request boundary. Public, customer, and administrator routes
+render role-specific navigation without treating frontend guards as authorization. Component tests
+cover anonymous redirect, form validation, and customer navigation. Real-browser checks proved
+customer login, logout, and administrator login against the running FastAPI/PostgreSQL stack.
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
