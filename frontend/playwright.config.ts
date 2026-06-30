@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Both long-lived processes are readiness-gated; existing developer servers are safely reused.
 export default defineConfig({
   testDir: "./e2e",
+  testMatch: "customer-happy-path.spec.ts",
   fullyParallel: false,
   retries: 0,
   reporter: [["list"], ["html", { open: "never" }]],

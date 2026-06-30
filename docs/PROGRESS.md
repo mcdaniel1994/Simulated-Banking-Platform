@@ -7,12 +7,12 @@ Operational checklist for the build. Phase names and numbers match
 Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEFERRED`.
 
 ## Current Status
-- Current milestone: M11 — Deployment
-- Current phase: Phase 37 — Single-origin deployment (repository/local work complete)
-- Current task: Commit Phase 37, then complete Phase 38 submission documentation
-- Last completed: Phase 37 repository configuration and local production-shaped verification
-- Next action: Complete README, submission evidence, and demo-video instructions
-- Current blocker: live VPS/Supabase/trusted-domain deployment requires external access and values
+- Current milestone: M12 — Documentation & Submission
+- Current phase: Phase 38 — repository documentation and verification complete; submission blocked
+- Current task: External deployment and demo-video actions remain
+- Last completed: Phase 38 repository documentation, acceptance audit, and complete local gates
+- Next action: Deploy with real VPS/Supabase/domain values, record/upload video, then submit
+- Current blocker: live deployment access/values and the required user-recorded demo video
 - Last updated: 2026-06-29
 
 ## Milestone progress
@@ -31,7 +31,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
 | M11 — Deployment | BLOCKED | 2026-06-29 |  | Repository/local work complete; live deploy external |
-| M12 — Documentation & Submission (SUBMISSION) | NOT STARTED |  |  | Checkpoint |
+| M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Repository work complete; criteria 13/15 external |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | NOT STARTED |  |  | `[EXTENSION]` — off critical path |
 
@@ -854,21 +854,29 @@ Completion evidence:
 ## M12 — Documentation & Submission `[SUBMISSION]` — SUBMISSION CHECKPOINT
 
 ### Phase 38 — README, design write-up, AI citation, demo video
-Status: NOT STARTED
-- [ ] README (overview, architecture, install/run, deploy, demo creds, decisions)
-- [ ] Cite AI assistance per CS50x policy
-- [ ] Record demo video
-- [ ] Walk §21 acceptance criteria 1–15 and confirm each holds
-- [ ] Full suites pass on clean checkout; reseed runs
-- [ ] Record decisions in `MY_WORKFLOW.md`
-- [ ] Commit the completed phase
-- [ ] **SUBMISSION CHECKPOINT reached** — submit before optional work
+Status: BLOCKED (external video and live deployment; repository work complete)
+- [x] README (overview, architecture, install/run, deploy, demo creds, decisions)
+- [x] Cite AI assistance per CS50x 2026 policy
+- [ ] Record and upload the demo video
+- [x] Walk §21 acceptance criteria 1–15 and record concrete pass/block evidence
+- [x] Full suites and clean-checkout-style setup pass; reseed runs
+- [x] Record decisions in `MY_WORKFLOW.md`
+- [x] Commit the completed repository phase
+- [ ] **SUBMISSION CHECKPOINT satisfied** — criteria 13 and 15 remain open
 
 Completion evidence:
-- Tests:
-- Manual verification:
-- Commit:
-- Notes:
+- Tests: backend `116 passed, 1 documented warning`; frontend `12 passed`; Chromium happy path
+  `1 passed`; Chromium local HTTPS production smoke `2 passed`; Prettier, ESLint, TypeScript, Vite
+  build, Ruff format/lint, Alembic drift, migration, seed, Docker image builds, nginx config, and
+  HTTPS health gates passed.
+- Manual verification: a fresh Git archive created new Python and npm environments, installed 34
+  locked Python packages and 278 npm packages, imported the backend, built the SPA, and parsed
+  Compose. The final production-shaped containers rebuilt, migrated, seeded, became healthy, and
+  returned `{"status":"ok"}` through nginx HTTPS.
+- Commit: `docs: add README, design write-up, AI citation, and demo video`
+- Notes: `README.md`, `docs/DEMO_VIDEO.md`, and `docs/SUBMISSION_CHECKLIST.md` are complete.
+  Criteria 13 and 15 are explicitly not satisfied because no real VPS/Supabase/trusted-domain
+  deploy or recorded/uploaded video exists.
 
 ---
 
@@ -904,6 +912,7 @@ Status: NOT STARTED
 | Date | Phase | Blocker | Needed to unblock | Status |
 |---|---|---|---|---|
 | 2026-06-29 | Phase 37 | No live VPS/domain/Supabase credentials or trusted TLS certificate | DNS name, VPS Docker access, Supabase pooler URL/password, production session secret, certificate/key | External |
+| 2026-06-29 | Phase 38 | Required CS50x demo video is not recorded/uploaded | User fills personal opening-card fields, records <=3 minutes, uploads public/unlisted, adds URL to README | External |
 
 ## Decisions awaiting confirmation
 | ID | Decision | Recommendation | Blocks | Resolved? |
@@ -930,18 +939,18 @@ Status: NOT STARTED
 | FastAPI TestClient warns that its legacy httpx integration is deprecated | Phase 2 | The health integration test passes, and changing the planned client dependency would expand this phase | Review FastAPI's supported replacement before the broader API test suite in Phase 16 |
 
 ## Submission readiness checklist (SPEC §21)
-- [ ] 1. Demo customer & admin login; cookie `HttpOnly`/`Secure`/`SameSite=Strict`
-- [ ] 2. Customer: accounts/balances/history; deposit, withdraw, transfer; correct balances
-- [ ] 3. Over-balance withdraw/transfer → `INSUFFICIENT_FUNDS`; no change
-- [ ] 4. Inactive/frozen ops rejected; same-account transfer rejected
-- [ ] 5. Mid-transfer failure leaves both balances unchanged (test)
-- [ ] 6. Concurrent withdrawals cannot overdraw (test); `CHECK (balance >= 0)` holds
-- [ ] 7. Stored balance == signed sum of transactions (reconciliation test)
-- [ ] 8. Customer cannot reach others' accounts (404) or admin (403)
-- [ ] 9. Logout invalidates session server-side; deactivation revokes sessions
-- [ ] 10. State-changing request without valid CSRF → `CSRF_INVALID`
-- [ ] 11. Admin lists/opens/deactivates customer, freezes account; admin not an owner
-- [ ] 12. All errors use the envelope; money as strings; no secrets in logs/errors
+- [x] 1. Demo customer & admin login; cookie `HttpOnly`/`Secure`/`SameSite=Strict`
+- [x] 2. Customer: accounts/balances/history; deposit, withdraw, transfer; correct balances
+- [x] 3. Over-balance withdraw/transfer → `INSUFFICIENT_FUNDS`; no change
+- [x] 4. Inactive/frozen ops rejected; same-account transfer rejected
+- [x] 5. Mid-transfer failure leaves both balances unchanged (test)
+- [x] 6. Concurrent withdrawals cannot overdraw (test); `CHECK (balance >= 0)` holds
+- [x] 7. Stored balance == signed sum of transactions (reconciliation test)
+- [x] 8. Customer cannot reach others' accounts (404) or admin (403)
+- [x] 9. Logout invalidates session server-side; deactivation revokes sessions
+- [x] 10. State-changing request without valid CSRF → `CSRF_INVALID`
+- [x] 11. Admin lists/opens/deactivates customer, freezes account; admin not an owner
+- [x] 12. All errors use the envelope; money as strings; no secrets in logs/errors
 - [ ] 13. Deployed single-origin HTTPS; Supabase; migrations + seed applied
-- [ ] 14. Backend auth/CSRF/business/rollback/concurrency/reconciliation + 1 E2E pass
+- [x] 14. Backend auth/CSRF/business/rollback/concurrency/reconciliation + 1 E2E pass
 - [ ] 15. README documents design/install/deploy + AI citation; demo video exists

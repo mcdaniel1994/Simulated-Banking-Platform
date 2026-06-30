@@ -3113,6 +3113,66 @@ criterion 13 open until the external live deployment is actually performed.
 
 ---
 
+### Entry — 2026-06-29 — Phase 38: Documentation and Submission Audit
+
+#### What I Worked On
+
+I wrote the root reviewer manual and technical tour, including architecture, security model,
+local/container/deployment workflows, public demo credentials, tests, design trade-offs,
+simulated-money disclaimer, and an explicit AI-assistance disclosure. I added entry-point code
+comments linking to that disclosure because the current CS50x final-project policy requires AI use
+to be cited in code comments.
+
+I also created a video script/checklist matching the current at-most-three-minute opening-card
+requirements and walked all 15 SPEC acceptance criteria in a separate evidence table.
+
+#### Clean-Checkout and Final Gates
+
+I exported committed `HEAD` into a new temporary directory. From that fresh archive, uv created a
+new environment and installed 34 locked packages; npm installed 278 packages; the backend imported;
+the SPA built; and Compose parsed. Runtime secrets remained process environment values and were not
+copied into the archive.
+
+Final working-checkout results:
+
+- Ruff format/lint: passed.
+- Backend pytest: 116 passed, one known FastAPI/Starlette TestClient deprecation warning.
+- Alembic: no model/schema drift.
+- Development and production migration/seed jobs: passed.
+- Prettier, ESLint, TypeScript, Vite build: passed.
+- Frontend Vitest: 12 passed.
+- Customer happy-path Chromium E2E: 1 passed.
+- Local HTTPS production Chromium smoke: 2 passed.
+- Final backend/gateway images rebuilt; backend became healthy; nginx HTTPS returned the API health
+  payload.
+
+Adding the production smoke initially made the original Playwright config discover all three
+tests. The app still passed, but I narrowed each config with an explicit `testMatch` so the
+submission happy-path command remains exactly one test and the deployment command remains two.
+
+#### Submission Decision
+
+Thirteen of fifteen SPEC criteria are evidenced. Criterion 13 still needs a real VPS, domain,
+trusted certificate, and Supabase pooler credentials. Criterion 15 still needs the user to record
+and upload the required video and paste its URL into `README.md`. I did not fabricate either.
+
+Phase 38 repository documentation and verification are complete, but the SUBMISSION checkpoint is
+not satisfied until those two external actions are completed. M13 hardening and M14 extensions
+remain untouched.
+
+#### Files I Changed
+
+- `README.md`
+- `docs/DEMO_VIDEO.md`
+- `docs/SUBMISSION_CHECKLIST.md`
+- `backend/app/main.py` (AI disclosure comment only)
+- `frontend/src/main.tsx` (AI disclosure comment only)
+- `frontend/playwright.config.ts` (isolate the one happy-path spec)
+- `docs/PROGRESS.md`
+- `docs/MY_WORKFLOW.md`
+
+---
+
 ## Questions for Review
 
 I put questions here when I want to bring them to an AI mentor, a CS50x forum, or future me. I
@@ -3135,3 +3195,18 @@ I will answer these at the SUBMISSION checkpoint after Phase 38.
 - **How did the project change from the original specification?**
 - **What would need to change before real users could use it?** (See SPEC §9.6, §15, §23 hardening.)
 - **What would I build differently a second time?**
+
+### Phase 38 Retrospective
+
+- The service-layer boundary, server-side session store, explicit CSRF dependency, and
+  ownership-filtered queries kept security decisions visible and testable.
+- The most valuable tests were transfer rollback, concurrent withdrawal, reconciliation, old-cookie
+  revocation, secret redaction, and the real-browser exact-balance flow.
+- Backend-first sequencing minimized frontend rework because money/error/auth contracts were stable
+  before the typed client existed.
+- Documentation status drift (M7/M8 and Caddy/nginx wording) showed that completion evidence and
+  decision tables must be updated together, not in separate later passes.
+- Before real users, the M13 backlog is mandatory: rate limiting, structured request IDs, strict
+  security headers/CSP/HSTS, readiness, backups, environment validation, scanning, and monitoring.
+- A second build would introduce deployment smoke configuration alongside the first reverse-proxy
+  config and would keep each Playwright project explicitly scoped from the beginning.

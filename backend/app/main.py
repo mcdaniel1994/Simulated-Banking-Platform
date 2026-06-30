@@ -1,6 +1,7 @@
 import logging
 import sys
 
+# AI tools assisted with planning, review, implementation, and tests; see the root README disclosure.
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
