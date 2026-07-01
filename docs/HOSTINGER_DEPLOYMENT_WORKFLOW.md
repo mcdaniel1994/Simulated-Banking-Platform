@@ -30,11 +30,13 @@ points, and security boundaries.
   template are implemented and locally verified
 - GitHub state: the repository is public at
   `https://github.com/mcdaniel1994/Simulated-Banking-Platform`; Coolify deployed commit `71a9689`
-- Current external task: record and publish the required demonstration video
-- Current stopping point: follow the existing video checklist without starting M13/M14 work
+- Current external task: final CS50x submission
+- Current stopping point: review the live application/video once, then submit without starting
+  unrelated M13/M14 work
 - Completed externally: Coolify application setup, DNS, Supabase, production environment,
-  deployment, trusted HTTPS, seed, refreshed admin/customer UI, and live Supabase persistence
-- Not started externally: recorded demo video
+  deployment, trusted HTTPS, seed, refreshed admin/customer UI, live Supabase persistence, and the
+  public demo video
+- Not started externally: final CS50x submission form
 
 ## Deployment Architecture Adjustment — Approved
 
@@ -297,10 +299,9 @@ Evidence:
 
 ## Stage 10 — Close the Submission Blockers
 
-1. Follow `DEMO_VIDEO.md`, record the video, upload it as public/unlisted, and add the URL to
-   `README.md`.
-2. Mark criterion 15 complete only after the uploaded video works while signed out.
-3. Run final documentation checks, commit the video URL/evidence updates, and submit to CS50x.
+1. [x] Record the video, publish it, and add the URL to `README.md`.
+2. [x] Mark criterion 15 complete after the uploaded video works while signed out.
+3. [ ] Commit/push the final video evidence and submit through CS50x.
 
 ## Deployment Journal
 
@@ -324,3 +325,4 @@ Append verified milestones here without secrets.
 | 2026-06-30 | 9 — Automated smoke | COMPLETE | Production Playwright smoke passed 2/2 against trusted HTTPS; both roles authenticated and logged out; secure cookie assertions passed; customer mutation succeeded; post-logout `/api/auth/me` returned 401 | Complete the production secret-output audit |
 | 2026-06-30 | 9 — Secret-output audit | COMPLETE | Coolify deployment/container logs contained no database URL, session secret, password, connection string, or traceback; tracked URL/secret matches were placeholders or isolated test values; no application output exposed secrets | Record and publish the required demonstration video |
 | 2026-06-30 | 9 — Refreshed application | COMPLETE | Coolify deployed commit `71a9689`; professional UI and admin customer creation are live; application mutations were observed in Supabase; public login and `/api/health` return 200 | Record and publish the required demonstration video |
+| 2026-06-30 | 10 — Demo video | COMPLETE | Public demo published at `https://youtu.be/Lkm8cpRFk90`; signed-out URL resolves successfully; README and acceptance evidence updated | Complete the final CS50x submission |

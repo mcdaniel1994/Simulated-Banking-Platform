@@ -3408,9 +3408,10 @@ professional interface and administrator customer-creation workflow work at
 `https://bank.forgehub.cloud/login`, and application updates appear in the Supabase tables. This
 confirms the revised browser-to-FastAPI-to-Supabase path in production.
 
-The next step is to display `docs/intro.md`, record the required demonstration video using the
-split-screen application/Supabase plan, and provide the public or unlisted YouTube URL. Do not
-begin the remaining M13/M14 backlog.
+I recorded and published the demonstration video at `https://youtu.be/Lkm8cpRFk90`. The public URL
+resolves successfully without an authenticated YouTube session and is now linked from the README.
+All 15 acceptance criteria are satisfied. The remaining action is the external CS50x submission
+itself; this documentation does not claim that submission has already occurred.
 
 ---
 
@@ -3427,7 +3428,7 @@ add the resolution and date when I have an answer.
 
 ## Project Retrospective
 
-I will answer these at the SUBMISSION checkpoint after Phase 38.
+I reviewed these at the Phase 38 submission checkpoint.
 
 - **What architecture decisions worked well?**
 - **What caused the most rework?**

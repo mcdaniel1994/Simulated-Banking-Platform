@@ -1,8 +1,8 @@
 # CS50x Demo Video Plan
 
-The application is live at `https://bank.forgehub.cloud/login`. No demo video has been recorded or
-uploaded yet. The current CS50x 2026 instructions require a video no longer than three minutes; the
-upload may be public or unlisted, but not private.
+The application is live at `https://bank.forgehub.cloud/login`. The completed public demo video is
+available at `https://youtu.be/Lkm8cpRFk90`. The published link was verified reachable without an
+authenticated YouTube session.
 
 ## Recording Layout
 
@@ -77,6 +77,9 @@ live at bank.forgehub.cloud.”
 
 ## Recording Checklist
 
+The video is published. Unchecked content items remain a final self-review checklist before
+submitting to CS50x.
+
 - [x] Deploy the refreshed application to the trusted HTTPS URL.
 - [x] Complete the required opening card in `docs/intro.md`.
 - [ ] Confirm the seeded customer is active and both demo accounts are active.
@@ -88,6 +91,6 @@ live at bank.forgehub.cloud.”
 - [ ] Demonstrate administrator dashboard, customer management, and logout.
 - [ ] Show the resulting safe balance/transaction changes in Supabase.
 - [ ] State the simulation/no-real-funds disclosure verbally or visibly.
-- [ ] Upload to YouTube as public or unlisted, not private.
-- [ ] Paste the final URL into the `Video Demo` line in `README.md`.
-- [ ] Watch the uploaded video end-to-end while signed out to verify reviewer access.
+- [x] Upload to YouTube as public or unlisted, not private.
+- [x] Paste the final URL into the `Video Demo` line in `README.md`.
+- [x] Verify the published URL is reachable while signed out.

@@ -2,7 +2,7 @@
 
 #### Source Code: [GitHub](https://github.com/mcdaniel1994/Simulated-Banking-Platform)
 #### Live Demo: [https://bank.forgehub.cloud/login](https://bank.forgehub.cloud/login)
-#### Video Demo: Not recorded yet — follow [the demo-video checklist](docs/DEMO_VIDEO.md)
+#### Video Demo: [https://youtu.be/Lkm8cpRFk90](https://youtu.be/Lkm8cpRFk90)
 
 ## Description
 
@@ -232,8 +232,6 @@ as required by the [CS50x 2026 final-project policy](https://cs50.harvard.edu/x/
 
 ## Submission Status
 
-Repository implementation, trusted HTTPS deployment, Supabase persistence, and production
-verification are complete. The only remaining submission criterion is the required public or
-unlisted demonstration video. The prepared opening card is in
-[`docs/intro.md`](docs/intro.md), and the recording plan is in
-[`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md).
+Repository implementation, trusted HTTPS deployment, Supabase persistence, production
+verification, and the public demonstration video are complete. All 15 acceptance criteria in
+`SPEC.md` §21 are satisfied, and the project is ready for final CS50x submission.

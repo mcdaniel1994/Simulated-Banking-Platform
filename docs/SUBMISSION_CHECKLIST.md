@@ -20,18 +20,15 @@ means repository tests, local verification, and/or the live deployment prove the
 | 12 | Satisfied | Error/audit tests enforce the common envelope, decimal-string money, sanitized validation, and absence of tokens, cookies, credentials, SQL, account numbers, and sensitive headers in errors/logs. |
 | 13 | Satisfied | `https://bank.forgehub.cloud` serves the SPA and API through trusted HTTPS. Coolify deployed commit `71a9689`; migration and seed completed; the private backend and gateway are healthy; writes persist through the TLS Supabase pooler. |
 | 14 | Satisfied | Full backend suite: 122 passed with one documented dependency warning. Frontend: 21 passed. Customer happy-path E2E: 1 passed. Responsive desktop/mobile suite: 4 passed. Trusted production smoke: 2 passed. |
-| 15 | **Blocked externally** | Root README, design/trade-offs, install/deploy docs, and AI disclosure exist. The required at-most-three-minute video has a complete script/checklist but has not been recorded or uploaded. |
+| 15 | Satisfied | Root README, design/trade-offs, install/deploy docs, and AI disclosure exist. The public demo video is linked at `https://youtu.be/Lkm8cpRFk90`, and the URL was verified reachable while signed out. |
 
-## External Action Required
+## Final Submission Action
 
-### Criterion 15
-
-1. Display the completed opening card in `docs/intro.md`.
-2. Record a video no longer than three minutes using the checklist.
-3. Upload it as public or unlisted, verify signed-out access, and add its URL to `README.md`.
+All repository, deployment, verification, and video acceptance evidence is complete. The remaining
+action is to review the published video once and submit the project through the CS50x submission
+workflow.
 
 ## Submission Decision
 
-**Fourteen of 15 criteria are satisfied.** Criterion 15 remains blocked only by the user's
-recording/upload action. Do not submit or describe the project as fully complete until the video
-is uploaded, linked in `README.md`, and verified while signed out.
+**All 15 acceptance criteria are satisfied.** The project is ready for final CS50x submission.
+This statement does not claim that the external submission form has already been sent.

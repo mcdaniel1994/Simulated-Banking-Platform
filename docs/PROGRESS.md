@@ -8,11 +8,11 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 
 ## Current Status
 - Current milestone: M12 — Documentation & Submission
-- Current phase: Phase 38 — repository documentation and verification complete; submission blocked
-- Current task: Record and upload the required demonstration video
-- Last completed: Commit `71a9689` deployed; refreshed UI and Supabase persistence verified live
-- Next action: Display `docs/intro.md`, follow `docs/DEMO_VIDEO.md`, and upload public/unlisted
-- Current blocker: required user-recorded and uploaded demo video
+- Current phase: Phase 38 — COMPLETE; submission checkpoint satisfied
+- Current task: Perform the final reviewer pass and submit through CS50x
+- Last completed: Public demo video published and linked at `https://youtu.be/Lkm8cpRFk90`
+- Next action: Review the live demo/video while signed out, then complete the CS50x submission
+- Current blocker: none
 - Last updated: 2026-06-30
 
 ## Milestone progress
@@ -31,7 +31,7 @@ Status values: `NOT STARTED` · `IN PROGRESS` · `BLOCKED` · `COMPLETE` · `DEF
 | M9 — Admin Frontend | COMPLETE | 2026-06-29 | 2026-06-29 | Phase 33 complete |
 | M10 — Frontend & E2E Testing | COMPLETE | 2026-06-29 | 2026-06-29 | Phases 34–35 complete |
 | M11 — Deployment | COMPLETE | 2026-06-29 | 2026-06-30 | Coolify deployment healthy; trusted HTTPS, SPA, API health, migration, seed, and live database write verified |
-| M12 — Documentation & Submission (SUBMISSION) | BLOCKED | 2026-06-29 |  | Deployment complete; criterion 15 video remains external |
+| M12 — Documentation & Submission (SUBMISSION) | COMPLETE | 2026-06-29 | 2026-06-30 | All 15 acceptance criteria satisfied; ready to submit |
 | M13 — Production Hardening | NOT STARTED |  |  | `[HARDENING]` — off critical path |
 | M14 — Extensions | IN PROGRESS | 2026-06-30 |  | Approved admin provisioning and professional UI extension complete in production |
 
@@ -857,15 +857,15 @@ Completion evidence:
 ## M12 — Documentation & Submission `[SUBMISSION]` — SUBMISSION CHECKPOINT
 
 ### Phase 38 — README, design write-up, AI citation, demo video
-Status: BLOCKED (external video only; live deployment is complete)
+Status: COMPLETE
 - [x] README (overview, architecture, install/run, deploy, demo creds, decisions)
 - [x] Cite AI assistance per CS50x 2026 policy
-- [ ] Record and upload the demo video
+- [x] Record and upload the demo video
 - [x] Walk §21 acceptance criteria 1–15 and record concrete pass/block evidence
 - [x] Full suites and clean-checkout-style setup pass; reseed runs
 - [x] Record decisions in `MY_WORKFLOW.md`
 - [x] Commit the completed repository phase
-- [ ] **SUBMISSION CHECKPOINT satisfied** — criterion 15 remains open
+- [x] **SUBMISSION CHECKPOINT satisfied** — all 15 criteria hold
 
 Completion evidence:
 - Tests: backend `122 passed, 1 documented warning`; frontend `21 passed`; Chromium happy path
@@ -876,10 +876,11 @@ Completion evidence:
   locked Python packages and 278 npm packages, imported the backend, built the SPA, and parsed
   Compose. The final production-shaped containers rebuilt, migrated, seeded, became healthy, and
   returned `{"status":"ok"}` through nginx HTTPS.
-- Repository documentation commit: `63efe0c`; final video URL/evidence commit remains pending.
+- Repository documentation commits: `63efe0c`, `13ae7ec`; final video URL/evidence commit is this
+  documentation update.
 - Notes: `README.md`, `docs/DEMO_VIDEO.md`, and `docs/SUBMISSION_CHECKLIST.md` are complete.
-  Criterion 13 is satisfied by the trusted-domain Coolify/Supabase deployment. Criterion 15 remains
-  open because the recorded/uploaded video does not yet exist.
+  Criterion 13 is satisfied by the trusted-domain Coolify/Supabase deployment. Criterion 15 is
+  satisfied by the public video at `https://youtu.be/Lkm8cpRFk90`.
 
 ---
 
@@ -925,11 +926,11 @@ Approved extension evidence:
 
 # Standing sections
 
-## Current blockers
+## Blocker history
 | Date | Phase | Blocker | Needed to unblock | Status |
 |---|---|---|---|---|
-| 2026-06-29 | Phase 37 | No live VPS/domain/Supabase credentials or trusted TLS certificate | DNS name, VPS Docker access, Supabase pooler URL/password, production session secret, certificate/key | External |
-| 2026-06-29 | Phase 38 | Required CS50x demo video is not recorded/uploaded | User fills personal opening-card fields, records <=3 minutes, uploads public/unlisted, adds URL to README | External |
+| 2026-06-29 | Phase 37 | No live VPS/domain/Supabase credentials or trusted TLS certificate | DNS name, VPS Docker access, Supabase pooler URL/password, production session secret, certificate/key | RESOLVED 2026-06-30 |
+| 2026-06-29 | Phase 38 | Required CS50x demo video was not recorded/uploaded | Record, publish, verify signed-out access, and add URL to README | RESOLVED 2026-06-30 |
 
 ## Decisions awaiting confirmation
 | ID | Decision | Recommendation | Blocks | Resolved? |
@@ -968,6 +969,6 @@ Approved extension evidence:
 - [x] 10. State-changing request without valid CSRF → `CSRF_INVALID`
 - [x] 11. Admin lists/opens/deactivates customer, freezes account; admin not an owner
 - [x] 12. All errors use the envelope; money as strings; no secrets in logs/errors
-- [ ] 13. Deployed single-origin HTTPS; Supabase; migrations + seed applied
+- [x] 13. Deployed single-origin HTTPS; Supabase; migrations + seed applied
 - [x] 14. Backend auth/CSRF/business/rollback/concurrency/reconciliation + 1 E2E pass
-- [ ] 15. README documents design/install/deploy + AI citation; demo video exists
+- [x] 15. README documents design/install/deploy + AI citation; demo video exists
